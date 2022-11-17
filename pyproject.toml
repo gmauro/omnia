@@ -1,0 +1,3 @@
+[tool.interrogate]
+ignore-module = false
+fail-under = 60
