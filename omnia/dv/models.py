@@ -93,13 +93,14 @@ class PosixDataObject:
 
     def delete(self, **kwargs):
         """
-        Delete the Document from the database.
+        Delete the Document from the database and unmap the local object.
         This will only take effect if the document has been previously saved.
         """
         if self.ensure_is_mapped("delete"):
             with self.mec:
                 self.dobj.delete(**kwargs)
                 self.logger.info("{} deleted".format(self.unique_key))
+            self.dobj.id = None
 
     def ensure_is_mapped(self, op=None):
         if self.map():

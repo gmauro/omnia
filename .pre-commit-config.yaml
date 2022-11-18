@@ -12,8 +12,8 @@ repos:
     hooks:
     - id: flake8
       args: [--ignore=E501]
--   repo: https://github.com/econchick/interrogate
-    rev: 1.5.0
-    hooks:
-    - id: interrogate
-      args: [-S, -vv, -i, -I, --fail-under=50]
+#-   repo: https://github.com/econchick/interrogate
+#    rev: 1.5.0
+#    hooks:
+#    - id: interrogate
+#      args: [-S, -vv, -i, -I, --fail-under=50]
