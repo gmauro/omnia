@@ -1,6 +1,6 @@
-APPNAME=`cat src/APPNAME`
+APPNAME=`cat omnia/APPNAME`
 TARGETS=build clean dependencies deploy install test uninstall
-VERSION=`cat src/VERSION`
+VERSION=`cat omnia/VERSION`
 
 all:
 	@echo "Try one of: ${TARGETS}"

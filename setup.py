@@ -68,7 +68,7 @@ setup(
     # pip to create the appropriate form of executable for the target platform.
     entry_points={
         "console_scripts": [
-            "omnia=omnia.__main__:main",
+            "omnia=omnia.main:main",
         ],
     },
 )
