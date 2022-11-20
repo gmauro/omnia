@@ -22,6 +22,7 @@ extra_files = [
     os.path.join(here, "environment.yml"),
     os.path.join(here, "omnia", "VERSION"),
     os.path.join(here, "omnia", "APPNAME"),
+    os.path.join(here, "config", "config.yaml"),
 ]
 
 setup(

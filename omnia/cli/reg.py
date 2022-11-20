@@ -4,13 +4,6 @@ from omnia.dv.connection import MongoEngineConnectionManager
 from omnia.dv.models import PosixDataObject
 from omnia.utils import path_exists
 
-mec = MongoEngineConnectionManager(
-    alias=PosixDataObject.__name__,
-    username="omnia_dv",
-    password="noh7ingi",
-    host="90.147.102.88",
-)
-
 help_doc = """
 Register a file, from a Posix filesystem, into Omnia
 """
@@ -34,7 +27,17 @@ def make_parser(parser):
     )
 
 
+def get_mec(args):
+    return MongoEngineConnectionManager(
+        alias=args.alias,
+        username=args.user,
+        password=args.password,
+        host=args.host,
+    )
+
+
 def implementation(logger, args):
+    mec = get_mec(args)
     dobj = PosixDataObject(logger=logger, mec=mec, path=args.path)
     if path_exists(args.path) and args.compute:
         dobj.compute()

@@ -1,0 +1,12 @@
+# MongoDB connection
+mdbc:
+  alias_label: "omnia"
+  username: "username"
+  password: "password"
+  host: "hostname"
+
+# Logger details
+loglevel: "INFO"
+logformat: "%(asctime)s|%(levelname)-8s|%(name)s |%(module)s |%(message)s"
+
+
