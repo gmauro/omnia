@@ -7,6 +7,6 @@ dependencies:
   - python_abi=3.10
   - pip:
       - appdirs==1.4.4
-      - comoda==0.4.1
+      - comoda==0.4.2
       - python-magic==0.4.27
       - mongoengine==0.24.2
