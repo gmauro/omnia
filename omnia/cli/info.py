@@ -22,4 +22,4 @@ def implementation(logger, args):
 
 
 def do_register(registration_list):
-    registration_list.append(("info", help_doc, make_parser, implementation))
+    registration_list.append(("show", help_doc, make_parser, implementation))

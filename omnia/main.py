@@ -6,45 +6,19 @@ from comoda import LOG_LEVELS, a_logger, ensure_dir
 
 from omnia import __appname__, __version__, log_file
 
-SUBMODULES_NAMES = ["omnia.cli.info", "omnia.cli.reg"]
-SUBMODULES = [import_module(n) for n in SUBMODULES_NAMES]
+SUBMODULES_NAMES = {"info": ["omnia.cli.info"], "dv": ["omnia.cli.reg"]}
 
 
 class App:
-    def __init__(self):
+    def __init__(self, parser, module):
+        self.parser = parser
         self.supported_submodules = []
-        for m in SUBMODULES:
+        submodules = [import_module(n) for n in SUBMODULES_NAMES[module]]
+        for m in submodules:
             m.do_register(self.supported_submodules)
 
-    def make_parser(self):
-        example_text = """examples:
-
-         omnia --version
-         omnia info"""
-        parser = argparse.ArgumentParser(
-            prog=__appname__,
-            description="Omnia",
-            epilog=example_text,
-            formatter_class=argparse.RawDescriptionHelpFormatter,
-        )
-        parser.add_argument(
-            "--logfile", type=str, metavar="PATH", help="log file", default=log_file
-        )
-        parser.add_argument(
-            "--loglevel",
-            type=str,
-            help="logger level.",
-            choices=LOG_LEVELS,
-            default="INFO",
-        )
-        parser.add_argument(
-            "-v",
-            "--version",
-            action="version",
-            version="%(prog)s {}".format(__version__),
-        )
-
-        subparsers = parser.add_subparsers(
+    def make_subparser(self):
+        subparsers = self.parser.add_subparsers(
             dest="subparser_name",
             title="subcommands",
             description="valid subcommands",
@@ -56,25 +30,63 @@ class App:
             addarg(subparser)
             subparser.set_defaults(func=impl)
 
-        return parser
+        return self.parser
 
 
+def make_parser():
+    example_text = """examples:
+
+     omnia --version
+     omnia info show"""
+    parser = argparse.ArgumentParser(
+        prog=__appname__,
+        description="Omnia",
+        epilog=example_text,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        "module", type=str, help="Module to load", choices=SUBMODULES_NAMES.keys()
+    )
+    parser.add_argument(
+        "--logfile", type=str, metavar="PATH", help="log file", default=log_file
+    )
+    parser.add_argument(
+        "--loglevel",
+        type=str,
+        help="logger level.",
+        choices=LOG_LEVELS,
+        default="INFO",
+    )
+    parser.add_argument(
+        "-v",
+        "--version",
+        action="version",
+        version="%(prog)s {}".format(__version__),
+    )
+
+    return parser
+
+
+# https://towardsdatascience.com/dynamically-add-arguments-to-argparse-python-patterns-a439121abc39
 def main():
-    app = App()
-    parser = app.make_parser()
-    args = parser.parse_args()
+    parser = make_parser()
+    args_, _ = parser.parse_known_args()
     log_format = (
         "%(asctime)s|%(levelname)-8s|%(name)s |%(module)s |%(funcName)s |%(message)s"
     )
-    if args.logfile == "stdout":
-        logger = a_logger("Main", log_format=log_format, level=args.loglevel)
+    if args_.logfile == "stdout":
+        logger = a_logger("Main", log_format=log_format, level=args_.loglevel)
     else:
-        logfile = args.logfile
+        logfile = args_.logfile
         ensure_dir(pathlib.Path(logfile).parent)
         print("Check logs at {}".format(logfile))
         logger = a_logger(
-            "Main", log_format=log_format, level=args.loglevel, filename=logfile
+            "Main", log_format=log_format, level=args_.loglevel, filename=logfile
         )
+
+    app = App(parser, args_.module)
+    app.make_subparser()
+    args = parser.parse_args()
 
     logger.info("{} started".format(__appname__.capitalize()))
     args.func(logger, args) if hasattr(args, "func") else parser.print_help()
