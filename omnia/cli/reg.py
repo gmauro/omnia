@@ -1,6 +1,6 @@
 import argparse
 
-from omnia.dv.connection import MongoEngineConnectionManager
+from omnia.cli import get_mec
 from omnia.dv.models import PosixDataObject
 from omnia.utils import path_exists
 
@@ -24,15 +24,6 @@ def make_parser(parser):
         action=argparse.BooleanOptionalAction,
         default=True,
         help="Compute file details",
-    )
-
-
-def get_mec(args):
-    return MongoEngineConnectionManager(
-        alias=args.alias,
-        username=args.user,
-        password=args.password,
-        host=args.host,
     )
 
 
