@@ -51,7 +51,7 @@ class ConfigurationManager:
         self.mdbc_alias = mdb_connection["alias_label"]
         self.mdbc_username = mdb_connection["username"]
         self.mdbc_password = mdb_connection["password"]
-        self.mdbc_host = mdb_connection["host"]
+        self.mdbc_hostname = mdb_connection["hostname"]
 
         self.loglevel = c["loglevel"]
         self.logformat = c["logformat"]
@@ -69,8 +69,8 @@ class ConfigurationManager:
         return self.mdbc_password
 
     @property
-    def get_mdbc_host(self):
-        return self.mdbc_host
+    def get_mdbc_hostname(self):
+        return self.mdbc_hostname
 
     @property
     def get_loglevel(self):

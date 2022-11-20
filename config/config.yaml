@@ -3,7 +3,7 @@ mdbc:
   alias_label: "omnia"
   username: "username"
   password: "password"
-  host: "hostname"
+  hostname: "hostname"
 
 # Logger details
 loglevel: "INFO"

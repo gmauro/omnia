@@ -9,5 +9,5 @@ def get_mec(args):
         alias=args.alias,
         username=args.user,
         password=args.password,
-        host=args.host,
+        host=args.hostname,
     )

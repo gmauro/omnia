@@ -7,7 +7,10 @@ from comoda import LOG_LEVELS, a_logger, ensure_dir
 from omnia import __appname__, __version__, log_file
 from omnia.config_manager import ConfigurationManager
 
-SUBMODULES_NAMES = {"info": ["omnia.cli.info"], "dv": ["omnia.cli.reg"]}
+SUBMODULES_NAMES = {
+    "info": ["omnia.cli.info"],
+    "dv": ["omnia.cli.del", "omnia.cli.reg"],
+}
 
 
 class App:
@@ -92,7 +95,7 @@ def make_parser():
         help="Password for the connection throughout MongoEngine",
     )
     mongodb_group.add_argument(
-        "--host",
+        "--hostname",
         type=str,
         help="Hostname for the connection throughout MongoEngine",
     )
@@ -135,8 +138,8 @@ def main():
     if args.password is None:
         args.password = cm.get_mdbc_password
 
-    if args.host is None:
-        args.host = cm.get_mdbc_host
+    if args.hostname is None:
+        args.hostname = cm.get_mdbc_hostname
 
     logger.info("{} started".format(__appname__.capitalize()))
     args.func(logger, args) if hasattr(args, "func") else parser.print_help()
