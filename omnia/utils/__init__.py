@@ -13,6 +13,15 @@ import magic
 DEFAULT_BUFSIZE = 4096
 
 
+def path_exists(fname):
+    """
+    Whether the path points to an existing file or directory
+    :param fname:
+    :return:
+    """
+    return pathlib.Path(fname).exists()
+
+
 # https://docs.python.org/3/library/hashlib.html#file-hashing
 def compute_sha256(fname, bufsize=DEFAULT_BUFSIZE):
     """

@@ -6,7 +6,7 @@ from comoda import LOG_LEVELS, a_logger, ensure_dir
 
 from omnia import __appname__, __version__, log_file
 
-SUBMODULES_NAMES = ["omnia.cli.info"]
+SUBMODULES_NAMES = ["omnia.cli.info", "omnia.cli.reg"]
 SUBMODULES = [import_module(n) for n in SUBMODULES_NAMES]
 
 
@@ -63,13 +63,18 @@ def main():
     app = App()
     parser = app.make_parser()
     args = parser.parse_args()
+    log_format = (
+        "%(asctime)s|%(levelname)-8s|%(name)s |%(module)s |%(funcName)s |%(message)s"
+    )
     if args.logfile == "stdout":
-        logger = a_logger("Main", level=args.loglevel)
+        logger = a_logger("Main", log_format=log_format, level=args.loglevel)
     else:
         logfile = args.logfile
         ensure_dir(pathlib.Path(logfile).parent)
         print("Check logs at {}".format(logfile))
-        logger = a_logger("Main", level=args.loglevel, filename=logfile)
+        logger = a_logger(
+            "Main", log_format=log_format, level=args.loglevel, filename=logfile
+        )
 
     logger.info("{} started".format(__appname__.capitalize()))
     args.func(logger, args) if hasattr(args, "func") else parser.print_help()
