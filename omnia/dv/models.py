@@ -3,7 +3,13 @@ import datetime
 import platform
 
 from comoda import a_logger
-from mongoengine import DateTimeField, Document, IntField, ListField, StringField
+from mongoengine import (
+    DateTimeField,
+    Document,
+    IntField,
+    ListField,
+    StringField,
+)
 
 from omnia import log_file
 from omnia.utils import compute_sha256, get_file_size, guess_mimetype
@@ -13,14 +19,15 @@ class DataObject(Document):
     prefixes = ("posix", "s3", "https")
 
     checksum = StringField()
+    collections = ListField(StringField(max_length=30))
     date_modified = DateTimeField(default=datetime.datetime.now())
     description = StringField(max_length=200)
     file_size = IntField()
+    host = StringField(required=True, unique_with="path")
     mimetype = StringField()
     path = StringField(required=True)
     prefix = StringField(choices=prefixes)
     tags = ListField(StringField(max_length=30))
-    host = StringField(required=True, unique_with="path")
 
     meta = {"allow_inheritance": True}
 
@@ -34,6 +41,7 @@ class PosixDataObject:
         mec=None,
         path=None,
         host=None,
+        collections=None,
     ):
         _prefix = "posix"
         _host = host if host is not None else platform.node()
@@ -44,7 +52,9 @@ class PosixDataObject:
             )
 
         self.mec = mec
-        self.dobj = DataObject(path=path, prefix=_prefix, host=_host)
+        self.dobj = DataObject(
+            collections=collections, path=path, prefix=_prefix, host=_host
+        )
         self.dobj._meta["db_alias"] = self.mec.alias
 
     @property
@@ -58,6 +68,16 @@ class PosixDataObject:
     @checksum.setter
     def checksum(self, c):
         self.dobj.checksum = c
+
+    @property
+    def collections(self):
+        return self.dobj.collections
+
+    @collections.setter
+    def collections(self, cs):
+        for c in cs:
+            if c not in self.dobj.collections:
+                self.dobj.collections.append(c)
 
     @property
     def file_size(self):
@@ -76,6 +96,16 @@ class PosixDataObject:
         self.dobj.mimetype = m
 
     @property
+    def tags(self):
+        return self.dobj.tags
+
+    @tags.setter
+    def tags(self, tags):
+        for tag in tags:
+            if tag not in self.dobj.tags:
+                self.dobj.tags.append(tag)
+
+    @property
     def unique_key(self):
         return ":".join([self.dobj.host, self.dobj.path])
 
@@ -83,7 +113,9 @@ class PosixDataObject:
     def is_mapped(self):
         with self.mec:
             objs = DataObject.objects(path=self.dobj.path, host=self.dobj.host)
-            return False if (objs.count()) <= 0 or self.dobj.id is None else True
+            return (
+                False if (objs.count()) <= 0 or self.dobj.id is None else True
+            )
 
     @property
     def is_connected(self):
@@ -158,7 +190,9 @@ class PosixDataObject:
                     result = self.dobj.modify(**kwargs)
                     self.logger.info("{} modified".format(self.unique_key))
             else:
-                self.logger.warning("No update parameters, " "skipping the operation")
+                self.logger.warning(
+                    "No update parameters, " "skipping the operation"
+                )
         return result
 
     def view(self):

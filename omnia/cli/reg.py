@@ -5,7 +5,9 @@ from omnia.dv.models import PosixDataObject
 from omnia.utils import path_exists
 
 help_doc = """
-Register a file, from a Posix filesystem, into Omnia
+Register a file, from a Posix filesystem, into Omnia.
+It reload all attributes from the database, if the document has been saved before.
+By default, recompute file details if it is available.
 """
 
 
@@ -25,13 +27,23 @@ def make_parser(parser):
         default=True,
         help="Compute file details",
     )
+    parser.add_argument(
+        "--cs" "--collections",
+        dest="cs",
+        nargs="+",
+        help="Document belongs to this collections",
+    )
+    parser.add_argument("--tags", nargs="+", help="Tags of the document")
 
 
 def implementation(logger, args):
     mec = get_mec(args)
     dobj = PosixDataObject(logger=logger, mec=mec, path=args.path)
+    dobj.reload()
     if path_exists(args.path) and args.compute:
         dobj.compute()
+    dobj.collections = args.cs
+    dobj.tags = args.tags
     dobj.save()
 
 
