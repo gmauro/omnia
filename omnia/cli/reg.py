@@ -6,8 +6,8 @@ from omnia.utils import path_exists
 
 help_doc = """
 Register a file, from a Posix filesystem, into Omnia.
-It reload all attributes from the database, if the document has been saved before.
-By default, recompute file details if it is available.
+It reloads all attributes from the database, if the document has been saved before.
+By default, recompute file details if the document is reachable.
 """
 
 
