@@ -1,9 +1,11 @@
 """ Mongo's models """
 import datetime
+import platform
 
 from comoda import a_logger
 from mongoengine import DateTimeField, Document, IntField, ListField, StringField
 
+from omnia import log_file
 from omnia.utils import compute_sha256, get_file_size, guess_mimetype
 
 
@@ -18,21 +20,31 @@ class DataObject(Document):
     path = StringField(required=True)
     prefix = StringField(choices=prefixes)
     tags = ListField(StringField(max_length=30))
-    zone = StringField(required=True, unique_with="path")
+    host = StringField(required=True, unique_with="path")
 
     meta = {"allow_inheritance": True}
 
 
 class PosixDataObject:
     def __init__(
-        self, logfile=None, loglevel=None, mec=None, path=None, zone="LocalFS"
+        self,
+        logger=None,
+        logfile=log_file,
+        loglevel="INFO",
+        mec=None,
+        path=None,
+        host=None,
     ):
         _prefix = "posix"
-        self.logger = a_logger(
-            self.__class__.__name__, level=loglevel, filename=logfile
-        )
+        _host = host if host is not None else platform.node()
+        self.logger = logger
+        if logger is None:
+            self.logger = a_logger(
+                self.__class__.__name__, level=loglevel, filename=logfile
+            )
+
         self.mec = mec
-        self.dobj = DataObject(path=path, prefix=_prefix, zone=zone)
+        self.dobj = DataObject(path=path, prefix=_prefix, host=_host)
         self.dobj._meta["db_alias"] = self.mec.alias
 
     @property
@@ -65,12 +77,12 @@ class PosixDataObject:
 
     @property
     def unique_key(self):
-        return ":".join([self.dobj.zone, self.dobj.path])
+        return ":".join([self.dobj.host, self.dobj.path])
 
     @property
     def is_mapped(self):
         with self.mec:
-            objs = DataObject.objects(path=self.dobj.path, zone=self.dobj.zone)
+            objs = DataObject.objects(path=self.dobj.path, host=self.dobj.host)
             return False if (objs.count()) <= 0 or self.dobj.id is None else True
 
     @property
@@ -114,7 +126,7 @@ class PosixDataObject:
 
     def map(self):
         with self.mec:
-            objs = DataObject.objects(path=self.dobj.path, zone=self.dobj.zone)
+            objs = DataObject.objects(path=self.dobj.path, host=self.dobj.host)
             if (objs.count()) == 1:
                 msg = "mapping, {} DataObject found".format(len(objs))
                 self.logger.debug(msg)
