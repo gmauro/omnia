@@ -199,10 +199,10 @@ class PosixDataObject:
         """
         Return object's detail in JSON format
         """
-        desc = []
+        desc = {}
         if self.ensure_is_mapped("view"):
             with self.mec:
-                desc = DataObject.objects(id=self.id).as_pymongo()
+                desc = DataObject.objects(id=self.id).as_pymongo()[0]
                 self.logger.debug(desc)
         return desc
 
