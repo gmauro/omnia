@@ -8,6 +8,7 @@ from mongoengine import (
     Document,
     IntField,
     ListField,
+    ReferenceField,
     StringField,
 )
 
@@ -15,11 +16,15 @@ from omnia import log_file
 from omnia.utils import compute_sha256, get_file_size, guess_mimetype
 
 
+class DataCollection(Document):
+    label = StringField(required=True, max_length=120, unique=True)
+
+
 class DataObject(Document):
     prefixes = ("posix", "s3", "https")
 
     checksum = StringField()
-    collections = ListField(StringField(max_length=30))
+    collections = ListField(ReferenceField(DataCollection))
     date_modified = DateTimeField(default=datetime.datetime.now())
     description = StringField(max_length=200)
     file_size = IntField()

@@ -9,7 +9,7 @@ from omnia.config_manager import ConfigurationManager
 
 SUBMODULES_NAMES = {
     "info": ["omnia.cli.info"],
-    "dv": ["omnia.cli.del", "omnia.cli.reg", "omnia.cli.view"],
+    "dv": ["omnia.cli.del", "omnia.cli.reg", "omnia.cli.view", "omnia.cli.co"],
 }
 
 
