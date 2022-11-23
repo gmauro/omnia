@@ -80,12 +80,7 @@ def make_parser():
     )
     mongodb_group = parser.add_argument_group("MongoDB")
     mongodb_group.add_argument(
-        "--alias",
-        type=str,
-        help="Alias name for the connection throughout MongoEngine",
-    )
-    mongodb_group.add_argument(
-        "--user",
+        "--username",
         type=str,
         help="Username for the connection throughout MongoEngine",
     )
@@ -98,6 +93,26 @@ def make_parser():
         "--hostname",
         type=str,
         help="Hostname for the connection throughout MongoEngine",
+    )
+    mongodb_group.add_argument(
+        "--port",
+        type=str,
+        help="Network port of th Hostname",
+    )
+    mongodb_group.add_argument(
+        "--db",
+        type=str,
+        help="DB's label",
+    )
+    mongodb_group.add_argument(
+        "--auth_mech",
+        type=str,
+        help="Authentication mechanism",
+    )
+    mongodb_group.add_argument(
+        "--auth_source",
+        type=str,
+        help="Authentication source",
     )
 
     return parser
@@ -129,17 +144,26 @@ def main():
     app.make_subparser()
     args = parser.parse_args()
 
-    if args.alias is None:
-        args.alias = cm.get_mdbc_alias
-
-    if args.user is None:
-        args.user = cm.get_mdbc_username
+    if args.username is None:
+        args.username = cm.get_mdbc_username
 
     if args.password is None:
         args.password = cm.get_mdbc_password
 
     if args.hostname is None:
         args.hostname = cm.get_mdbc_hostname
+
+    if args.port is None:
+        args.port = cm.get_mdbc_port
+
+    if args.db is None:
+        args.db = cm.get_mdbc_db
+
+    if args.auth_mech is None:
+        args.auth_mech = cm.get_mdbc_auth_mech
+
+    if args.auth_source is None:
+        args.auth_source = cm.get_mdbc_auth_source
 
     logger.info("{} started".format(__appname__.capitalize()))
     args.func(logger, args) if hasattr(args, "func") else parser.print_help()

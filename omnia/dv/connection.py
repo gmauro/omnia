@@ -3,17 +3,24 @@ Manager to handle Mongoengine's connection
 """
 from mongoengine import connect, disconnect
 
+from omnia.config_manager import ConfigurationManager
+
 
 class MongoEngineConnectionManager:
     def __init__(self, **kwargs):
-        self.alias = kwargs.get("alias", "omnia_dv_alias")
-        self.db = kwargs.get("db", "omnia_dv")
-        self.username = kwargs.get("username", None)
-        self.password = kwargs.get("password", None)
-        self.host = kwargs.get("host", None)
-        self.port = kwargs.get("port", 27017)
-        self.auth_mech = kwargs.get("authentication_mechanism", "SCRAM-SHA-256")
-        self.auth_source = kwargs.get("authentication_source", "omnia_dv")
+        cm = ConfigurationManager()
+        self.alias = kwargs.get("alias", cm.get_mdbc_alias)
+        self.db = kwargs.get("db", cm.get_mdbc_db)
+        self.username = kwargs.get("username", cm.get_mdbc_username)
+        self.password = kwargs.get("password", cm.get_mdbc_password)
+        self.host = kwargs.get("host", cm.get_mdbc_hostname)
+        self.port = kwargs.get("port", cm.get_mdbc_port)
+        self.auth_mech = kwargs.get(
+            "authentication_mechanism", cm.get_mdbc_auth_mech
+        )
+        self.auth_source = kwargs.get(
+            "authentication_source", cm.get_mdbc_auth_source
+        )
 
     def __enter__(self):
         connect(

@@ -5,7 +5,7 @@ from shutil import copyfile
 from comoda import a_logger
 from comoda.yaml import load
 
-from omnia import __appname__, config_dir
+from omnia import __appname__, config_dir, log_file
 
 
 class ConfigurationManager:
@@ -14,13 +14,13 @@ class ConfigurationManager:
             _from_package = files("config").joinpath("config.yaml")
             copyfile(_from_package, dst)
 
-        loglevel = args.loglevel
-        logfile = args.logfile
+        loglevel = "INFO" if args is None else args.loglevel
+        logfile = log_file if args is None else args.logfile
         logger = a_logger(
             self.__class__.__name__, level=loglevel, filename=logfile
         )
 
-        if args.configuration_file:
+        if args and args.configuration_file:
             configuration_file = Path(args.configuration_file)
             if not configuration_file.exists():
                 msg = "{} file not found. Please check the path".format(
@@ -52,6 +52,10 @@ class ConfigurationManager:
         self.mdbc_username = mdb_connection["username"]
         self.mdbc_password = mdb_connection["password"]
         self.mdbc_hostname = mdb_connection["hostname"]
+        self.mdbc_port = mdb_connection["port"]
+        self.mdbc_db = mdb_connection["db"]
+        self.mdbc_auth_mech = mdb_connection["auth_mech"]
+        self.mdbc_auth_source = mdb_connection["auth_source"]
 
         self.loglevel = c["loglevel"]
         self.logformat = c["logformat"]
@@ -67,6 +71,22 @@ class ConfigurationManager:
     @property
     def get_mdbc_password(self):
         return self.mdbc_password
+
+    @property
+    def get_mdbc_port(self):
+        return self.mdbc_port
+
+    @property
+    def get_mdbc_db(self):
+        return self.mdbc_db
+
+    @property
+    def get_mdbc_auth_mech(self):
+        return self.mdbc_auth_mech
+
+    @property
+    def get_mdbc_auth_source(self):
+        return self.mdbc_auth_source
 
     @property
     def get_mdbc_hostname(self):
