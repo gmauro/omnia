@@ -13,11 +13,16 @@ from mongoengine import (
 )
 
 from omnia import log_file
+from omnia.config_manager import ConfigurationManager
 from omnia.utils import compute_sha256, get_file_size, guess_mimetype
+
+cm = ConfigurationManager()
 
 
 class DataCollection(Document):
     label = StringField(required=True, max_length=120, unique=True)
+
+    meta = {"db_alias": cm.get_mdbc_alias}
 
 
 class DataObject(Document):
@@ -25,7 +30,8 @@ class DataObject(Document):
 
     checksum = StringField()
     collections = ListField(ReferenceField(DataCollection))
-    date_modified = DateTimeField(default=datetime.datetime.now())
+    creation_date = DateTimeField(default=datetime.datetime.now())
+    modification_date = DateTimeField()
     description = StringField(max_length=200)
     file_size = IntField()
     host = StringField(required=True, unique_with="path")
@@ -34,7 +40,7 @@ class DataObject(Document):
     prefix = StringField(choices=prefixes)
     tags = ListField(StringField(max_length=30))
 
-    meta = {"allow_inheritance": True}
+    meta = {"allow_inheritance": True, "db_alias": cm.get_mdbc_alias}
 
 
 class PosixDataObject:
@@ -60,7 +66,6 @@ class PosixDataObject:
         self.dobj = DataObject(
             collections=collections, path=path, prefix=_prefix, host=_host
         )
-        self.dobj._meta["db_alias"] = self.mec.alias
 
     @property
     def id(self):
@@ -81,8 +86,11 @@ class PosixDataObject:
     @collections.setter
     def collections(self, cs):
         for c in cs:
-            if c not in self.dobj.collections:
-                self.dobj.collections.append(c)
+            with self.mec:
+                dc = DataCollection.objects().get(label=c)
+                # print("dc: {}".format(dc.id))
+                if dc not in self.dobj.collections:
+                    self.dobj.collections.append(dc)
 
     @property
     def file_size(self):
@@ -91,6 +99,14 @@ class PosixDataObject:
     @file_size.setter
     def file_size(self, s):
         self.dobj.file_size = s
+
+    @property
+    def modification_date(self):
+        return self.dobj.modification_date
+
+    @modification_date.setter
+    def modification_date(self, d):
+        self.dobj.modification_date = d
 
     @property
     def mimetype(self):
@@ -192,6 +208,7 @@ class PosixDataObject:
         if self.ensure_is_mapped("modify"):
             if len(kwargs) > 0:
                 with self.mec:
+                    self.dobj.modification_date = datetime.datetime.now()
                     result = self.dobj.modify(**kwargs)
                     self.logger.info("{} modified".format(self.unique_key))
             else:
@@ -222,5 +239,6 @@ class PosixDataObject:
         if not self.is_mapped:
             self.map()
         with self.mec:
+            self.dobj.modification_date = datetime.datetime.now()
             self.dobj.save(**kwargs)
         self.logger.info("{} saved".format(self.dobj.id))
