@@ -9,4 +9,4 @@ dependencies:
       - appdirs==1.4.4
       - comoda==0.4.2
       - python-magic==0.4.27
-      - mongoengine==0.24.2
+      - mongoengine==0.26.0

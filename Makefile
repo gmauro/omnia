@@ -31,7 +31,8 @@ tag:
 	git tag v${VERSION}
 
 test:
-	@echo "test"
+	@echo "Testing"
+	python -m unittest discover -s tests
 
 uninstall:
 	pip uninstall -y ${APPNAME}

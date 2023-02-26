@@ -10,3 +10,4 @@ dependencies:
       - flake8==5.0
       - isort==5.10
       - interrogate==1.5
+      - mongomock==4.1.2
