@@ -14,7 +14,10 @@ from mongoengine import (
 
 from omnia import log_file
 from omnia.config_manager import ConfigurationManager
+from omnia.dv import get_mec_from_config
 from omnia.utils import compute_sha256, get_file_size, guess_mimetype
+
+PREFIXES = ("posix", "s3", "https")
 
 cm = ConfigurationManager()
 
@@ -26,8 +29,6 @@ class DataCollection(Document):
 
 
 class DataObject(Document):
-    prefixes = ("posix", "s3", "https")
-
     checksum = StringField()
     collections = ListField(ReferenceField(DataCollection))
     creation_date = DateTimeField(default=datetime.datetime.now())
@@ -37,34 +38,32 @@ class DataObject(Document):
     host = StringField(required=True, unique_with="path")
     mimetype = StringField()
     path = StringField(required=True)
-    prefix = StringField(choices=prefixes)
+    prefix = StringField(choices=PREFIXES)
     tags = ListField(StringField(max_length=30))
 
     meta = {"allow_inheritance": True, "db_alias": cm.get_mdbc_alias}
 
 
 class PosixDataObject:
-    def __init__(
-        self,
-        logger=None,
-        logfile=log_file,
-        loglevel="INFO",
-        mec=None,
-        path=None,
-        host=None,
-        collections=None,
-    ):
+    def __init__(self, **kwargs):
         _prefix = "posix"
-        _host = host if host is not None else platform.node()
-        self.logger = logger
+        collections = kwargs.get("collections", None)
+        host = kwargs.get("host", platform.node)
+        path = kwargs.get("path", None)
+
+        logfile = kwargs.get("logfile", log_file)
+        loglevel = kwargs.get("loglevel", "INFO")
+        logger = kwargs.get("logger", None)
         if logger is None:
             self.logger = a_logger(
                 self.__class__.__name__, level=loglevel, filename=logfile
             )
+        else:
+            self.logger = logger
 
-        self.mec = mec
+        self.mec = kwargs.get("mec", get_mec_from_config())
         self.dobj = DataObject(
-            collections=collections, path=path, prefix=_prefix, host=_host
+            collections=collections, path=path, prefix=_prefix, host=host
         )
 
     @property
