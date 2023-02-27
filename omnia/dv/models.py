@@ -14,7 +14,7 @@ from mongoengine import (
 
 from omnia import log_file
 from omnia.config_manager import ConfigurationManager
-from omnia.dv import get_mec_from_config
+from omnia.dv.connection import get_mec_from_config
 from omnia.utils import compute_sha256, get_file_size, guess_mimetype
 
 PREFIXES = ("posix", "s3", "https")
@@ -46,10 +46,13 @@ class DataObject(Document):
 
 class PosixDataObject:
     def __init__(self, **kwargs):
-        _prefix = "posix"
-        collections = kwargs.get("collections", None)
+
+        collections = kwargs.get("collections", [])
+        description = kwargs.get("description", None)
         host = kwargs.get("host", platform.node)
         path = kwargs.get("path", None)
+        prefix = "posix"
+        tags = kwargs.get("tags", [])
 
         logfile = kwargs.get("logfile", log_file)
         loglevel = kwargs.get("loglevel", "INFO")
@@ -63,7 +66,12 @@ class PosixDataObject:
 
         self.mec = kwargs.get("mec", get_mec_from_config())
         self.dobj = DataObject(
-            collections=collections, path=path, prefix=_prefix, host=host
+            collections=collections,
+            description=description,
+            host=host,
+            path=path,
+            prefix=prefix,
+            tags=tags,
         )
 
     @property
@@ -87,7 +95,6 @@ class PosixDataObject:
         for c in cs:
             with self.mec:
                 dc = DataCollection.objects().get(label=c)
-                # print("dc: {}".format(dc.id))
                 if dc not in self.dobj.collections:
                     self.dobj.collections.append(dc)
 
@@ -121,6 +128,7 @@ class PosixDataObject:
 
     @tags.setter
     def tags(self, tags):
+        print("here")
         for tag in tags:
             if tag not in self.dobj.tags:
                 self.dobj.tags.append(tag)

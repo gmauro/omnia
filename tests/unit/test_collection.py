@@ -18,6 +18,9 @@ class TestDataCollection(unittest.TestCase):
     def tearDownClass(cls):
         disconnect()
 
+    def tearDown(self) -> None:
+        DataCollection.objects().first().delete()
+
     def test_saveDataCollection(self):
         c = DataCollection(label="c1")
         c.save()
