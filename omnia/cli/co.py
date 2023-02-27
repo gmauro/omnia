@@ -5,8 +5,7 @@ from omnia.dv.models import DataCollection
 
 help_doc = """
 Create a collection.
-It reloads all attributes from the database, if the document has been saved
-before.
+Reloads all attributes from the database, if the document was saved before.
 """
 
 
@@ -24,9 +23,7 @@ def implementation(logger, args):
             logger.info("{} collection created".format(args.label))
     except NotUniqueError:
         logger.info(
-            "Collection {} is present already. Creation skipped".format(
-                args.label
-            )
+            "Collection {} already exists. Skipped creation ".format(args.label)
         )
 
 

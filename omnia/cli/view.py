@@ -4,7 +4,7 @@ from omnia.cli import get_mec
 from omnia.dv.models import PosixDataObject
 
 help_doc = """
-View document's details from Omnia, if it has been saved before.
+View the details of the Omnia document if it has already been saved.
 """
 
 
