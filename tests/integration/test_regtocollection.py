@@ -1,11 +1,10 @@
 import unittest
 import uuid
 
+import mongomock
 from mongoengine import connect, disconnect, get_connection
 
-from omnia.dv.models import DataCollection
-from omnia.config_manager import ConfigurationManager
-from omnia.dv.models import PosixDataObject, DataObject
+from omnia.dv.models import DataCollection, DataObject, PosixDataObject
 
 
 class TestRegToCollection(unittest.TestCase):
@@ -13,8 +12,8 @@ class TestRegToCollection(unittest.TestCase):
     def setUpClass(cls):
         connect(
             "mongoenginetest",
-            host="mongomock://localhost",
-            alias="omnia_dv_alias",
+            host="mongodb://localhost",
+            mongo_client_class=mongomock.MongoClient,
         )
 
     @classmethod
@@ -22,8 +21,7 @@ class TestRegToCollection(unittest.TestCase):
         disconnect()
 
     def setUp(self) -> None:
-        cm = ConfigurationManager()
-        self.mec = get_connection(alias=cm.get_mdbc_alias)
+        self.mec = get_connection()
         self.host = str(uuid.uuid4())
         self.path = "/".join(str(uuid.uuid4()).split("-"))
 

@@ -1,5 +1,6 @@
 import unittest
 
+import mongomock
 from mongoengine import connect, disconnect
 
 from omnia.dv.models import DataCollection
@@ -10,8 +11,8 @@ class TestDataCollection(unittest.TestCase):
     def setUpClass(cls):
         connect(
             "mongoenginetest",
-            host="mongomock://localhost",
-            alias="omnia_dv_alias",
+            host="mongodb://localhost",
+            mongo_client_class=mongomock.MongoClient,
         )
 
     @classmethod
