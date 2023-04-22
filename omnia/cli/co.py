@@ -1,6 +1,6 @@
 from mongoengine.errors import NotUniqueError
 
-from omnia.cli import get_mec
+from omnia.connection import get_mec
 from omnia.dv.models import DataCollection
 
 help_doc = """
@@ -16,10 +16,11 @@ def make_parser(parser):
 def implementation(logger, args):
     mec = get_mec(args)
     cobj = DataCollection(label=args.label)
-    cobj._meta["db_alias"] = mec.alias
+    # cobj._meta["db_alias"] = mec.alias
     try:
         with mec:
             cobj.save()
+            print("here")
             logger.info("{} collection created".format(args.label))
     except NotUniqueError:
         logger.info(

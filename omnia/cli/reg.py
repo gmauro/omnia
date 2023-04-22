@@ -1,6 +1,6 @@
 import argparse
 
-from omnia.cli import get_mec
+from omnia.connection import get_mec
 from omnia.dv.models import PosixDataObject
 from omnia.utils import path_exists
 

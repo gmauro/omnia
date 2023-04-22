@@ -39,7 +39,7 @@ class ConfigurationManager:
                 )
                 copy_config_file_from_package(configuration_file)
                 logger.warning(
-                    "Updates default path settings in the config file at {}".format(
+                    "Configuration file has default values! Update them in {}".format(
                         configuration_file
                     )
                 )
@@ -48,49 +48,19 @@ class ConfigurationManager:
         c = load(configuration_file)
 
         mdb_connection = c["mdbc"]
-        self.mdbc_alias = mdb_connection["alias_label"]
-        self.mdbc_username = mdb_connection["username"]
-        self.mdbc_password = mdb_connection["password"]
-        self.mdbc_hostname = mdb_connection["hostname"]
-        self.mdbc_port = mdb_connection["port"]
         self.mdbc_db = mdb_connection["db"]
-        self.mdbc_auth_mech = mdb_connection["auth_mech"]
-        self.mdbc_auth_source = mdb_connection["auth_source"]
+        self.mdbc_uri = mdb_connection["uri"]
 
         self.loglevel = c["loglevel"]
         self.logformat = c["logformat"]
-
-    @property
-    def get_mdbc_alias(self):
-        return self.mdbc_alias
-
-    @property
-    def get_mdbc_username(self):
-        return self.mdbc_username
-
-    @property
-    def get_mdbc_password(self):
-        return self.mdbc_password
-
-    @property
-    def get_mdbc_port(self):
-        return self.mdbc_port
 
     @property
     def get_mdbc_db(self):
         return self.mdbc_db
 
     @property
-    def get_mdbc_auth_mech(self):
-        return self.mdbc_auth_mech
-
-    @property
-    def get_mdbc_auth_source(self):
-        return self.mdbc_auth_source
-
-    @property
-    def get_mdbc_hostname(self):
-        return self.mdbc_hostname
+    def get_mdbc_uri(self):
+        return self.mdbc_uri
 
     @property
     def get_loglevel(self):

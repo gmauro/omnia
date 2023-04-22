@@ -14,7 +14,7 @@ from mongoengine import (
 
 from omnia import log_file
 from omnia.config_manager import ConfigurationManager
-from omnia.dv.connection import get_mec_from_config
+from omnia.connection import get_mec
 from omnia.utils import compute_sha256, get_file_size, guess_mimetype
 
 PREFIXES = ("posix", "s3", "https")
@@ -24,8 +24,6 @@ cm = ConfigurationManager()
 
 class DataCollection(Document):
     label = StringField(required=True, max_length=120, unique=True)
-
-    meta = {"db_alias": cm.get_mdbc_alias}
 
 
 class DataObject(Document):
@@ -41,7 +39,7 @@ class DataObject(Document):
     prefix = StringField(choices=PREFIXES)
     tags = ListField(StringField(max_length=30))
 
-    meta = {"allow_inheritance": True, "db_alias": cm.get_mdbc_alias}
+    meta = {"allow_inheritance": True}
 
 
 class PosixDataObject:
@@ -64,7 +62,7 @@ class PosixDataObject:
         else:
             self.logger = logger
 
-        self.mec = kwargs.get("mec", get_mec_from_config())
+        self.mec = kwargs.get("mec", get_mec())
         self.dobj = DataObject(
             collections=collections,
             description=description,

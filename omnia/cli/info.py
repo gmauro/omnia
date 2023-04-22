@@ -1,4 +1,4 @@
-from omnia import __appname__, __version__, log_file, config_dir
+from omnia import __appname__, __version__, config_dir, log_file
 
 help_doc = """
 Show Omnia details

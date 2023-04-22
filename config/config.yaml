@@ -1,13 +1,8 @@
 # MongoDB connection
 mdbc:
-  alias_label: "omnia_dv_alias"
-  username: "username"
-  password: "password"
-  hostname: "hostname"
-  port: 27017
-  db: "omnia_dv"
-  auth_mech: "SCRAM-SHA-256"
-  auth_source: "omnia_dv"
+  db: "omnia"
+  uri: "mongodb://"
+
 
 # Logger details
 loglevel: "INFO"

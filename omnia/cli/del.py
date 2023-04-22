@@ -1,4 +1,4 @@
-from omnia.cli import get_mec
+from omnia.connection import get_mec
 from omnia.dv.models import PosixDataObject
 
 help_doc = """
