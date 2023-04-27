@@ -6,10 +6,10 @@ from mongoengine import connect, disconnect
 from omnia.config_manager import ConfigurationManager
 
 
-def get_mec(args):
+def get_mec(db=None, uri=None):
     return MongoEngineConnectionManager(
-        db=args.db,
-        uri=args.uri,
+        db=db,
+        uri=uri,
     )
 
 

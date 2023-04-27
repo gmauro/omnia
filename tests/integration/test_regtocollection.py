@@ -34,9 +34,7 @@ class TestRegToCollection(unittest.TestCase):
         c = DataCollection(label=collection_label)
         c.save()
 
-        posix_dobj = PosixDataObject(
-            mec=self.mec, host=self.host, path=self.path
-        )
+        posix_dobj = PosixDataObject(mec=self.mec, host=self.host, path=self.path)
         posix_dobj.collections = [collection_label]
         posix_dobj.save()
 

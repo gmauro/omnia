@@ -1,5 +1,6 @@
 """Read details from files."""
 
+import importlib.metadata
 import os.path
 
 from appdirs import user_config_dir, user_log_dir
@@ -7,13 +8,9 @@ from appdirs import user_config_dir, user_log_dir
 here = os.path.abspath(os.path.dirname(__file__))
 __all__ = ["__appname__", "__version__", "config_dir", "log_file"]
 
-with open(os.path.join(os.path.dirname(here), "omnia", "APPNAME")) as app_file:
-    __appname__ = app_file.read().strip()
+__appname__ = __name__
 
-with open(
-    os.path.join(os.path.dirname(here), "omnia", "VERSION")
-) as version_file:
-    __version__ = version_file.read().strip()
+__version__ = importlib.metadata.version(__appname__)
 
 log_file = user_log_dir(__appname__)
 config_dir = user_config_dir(__appname__)

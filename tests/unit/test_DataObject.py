@@ -53,9 +53,7 @@ class TestDataObject(unittest.TestCase):
 
     def test_posixDataObject_compute(self):
         path = "tests/data/file.bin"
-        checksum = (
-            "875617088a4f08e5d836b8629f6bf16d9bc5bf4b1c43b8520af0bcb3d4814a62"
-        )
+        checksum = "875617088a4f08e5d836b8629f6bf16d9bc5bf4b1c43b8520af0bcb3d4814a62"
         size = 1353
         mimetype = "application/octet-stream"
         posix_dobj = PosixDataObject(mec=self.mec, host=self.host, path=path)
@@ -69,17 +67,13 @@ class TestDataObject(unittest.TestCase):
             assert fresh_dobj.mimetype == mimetype
 
     def test_posixDataObject_unique_key(self):
-        posix_dobj = PosixDataObject(
-            mec=self.mec, host=self.host, path=self.path
-        )
+        posix_dobj = PosixDataObject(mec=self.mec, host=self.host, path=self.path)
         posix_dobj.save()
 
         assert posix_dobj.unique_key == "{}:{}".format(self.host, self.path)
 
     def test_posixDataObject_is_mapped(self):
-        posix_dobj = PosixDataObject(
-            mec=self.mec, host=self.host, path=self.path
-        )
+        posix_dobj = PosixDataObject(mec=self.mec, host=self.host, path=self.path)
         self.assertFalse(posix_dobj.is_mapped)
 
         posix_dobj.save()

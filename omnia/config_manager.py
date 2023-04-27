@@ -16,16 +16,12 @@ class ConfigurationManager:
 
         loglevel = "INFO" if args is None else args.loglevel
         logfile = log_file if args is None else args.logfile
-        logger = a_logger(
-            self.__class__.__name__, level=loglevel, filename=logfile
-        )
+        logger = a_logger(self.__class__.__name__, level=loglevel, filename=logfile)
 
         if args and args.configuration_file:
             configuration_file = Path(args.configuration_file)
             if not configuration_file.exists():
-                msg = "{} file not found. Please check the path".format(
-                    configuration_file
-                )
+                msg = "{} file not found. Please check the path".format(configuration_file)
                 logger.error(msg)
                 exit(msg)
         else:
@@ -38,11 +34,7 @@ class ConfigurationManager:
                     "resource to {}".format(__appname__, configuration_file)
                 )
                 copy_config_file_from_package(configuration_file)
-                logger.warning(
-                    "Configuration file has default values! Update them in {}".format(
-                        configuration_file
-                    )
-                )
+                logger.warning("Configuration file has default values! Update them in {}".format(configuration_file))
 
         logger.debug("Reading configuration from {}".format(configuration_file))
         c = load(configuration_file)

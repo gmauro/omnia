@@ -1,12 +1,6 @@
 from enum import Enum
 
-from mongoengine import (
-    Document,
-    EnumField,
-    SequenceField,
-    StringField,
-    URLField,
-)
+from mongoengine import Document, EnumField, SequenceField, StringField, URLField
 
 from omnia.config_manager import ConfigurationManager
 

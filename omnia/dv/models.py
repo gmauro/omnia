@@ -44,7 +44,6 @@ class DataObject(Document):
 
 class PosixDataObject:
     def __init__(self, **kwargs):
-
         collections = kwargs.get("collections", [])
         description = kwargs.get("description", None)
         host = kwargs.get("host", platform.node)
@@ -56,9 +55,7 @@ class PosixDataObject:
         loglevel = kwargs.get("loglevel", "INFO")
         logger = kwargs.get("logger", None)
         if logger is None:
-            self.logger = a_logger(
-                self.__class__.__name__, level=loglevel, filename=logfile
-            )
+            self.logger = a_logger(self.__class__.__name__, level=loglevel, filename=logfile)
         else:
             self.logger = logger
 
@@ -139,9 +136,7 @@ class PosixDataObject:
     def is_mapped(self):
         with self.mec:
             objs = DataObject.objects(path=self.dobj.path, host=self.dobj.host)
-            return (
-                False if (objs.count()) <= 0 or self.dobj.id is None else True
-            )
+            return False if (objs.count()) <= 0 or self.dobj.id is None else True
 
     @property
     def is_connected(self):
@@ -155,11 +150,7 @@ class PosixDataObject:
         self.dobj.file_size = get_file_size(self.dobj.path)
         self.dobj.mimetype = guess_mimetype(self.dobj.path)
 
-        self.logger.debug(
-            "computed: {}, {}, {}".format(
-                self.dobj.file_size, self.dobj.mimetype, self.dobj.checksum
-            )
-        )
+        self.logger.debug("computed: {}, {}, {}".format(self.dobj.file_size, self.dobj.mimetype, self.dobj.checksum))
 
     def delete(self, **kwargs):
         """
@@ -177,8 +168,7 @@ class PosixDataObject:
             return True
         else:
             self.logger.warning(
-                "Document {} does not exist on remote, "
-                "skipping {} operation".format(self.unique_key, op)
+                "Document {} does not exist on remote, " "skipping {} operation".format(self.unique_key, op)
             )
             return False
 
@@ -217,9 +207,7 @@ class PosixDataObject:
                     result = self.dobj.modify(**kwargs)
                     self.logger.info("{} modified".format(self.unique_key))
             else:
-                self.logger.warning(
-                    "No update parameters, " "skipping the operation"
-                )
+                self.logger.warning("No update parameters, " "skipping the operation")
         return result
 
     def view(self):

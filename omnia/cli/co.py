@@ -14,7 +14,7 @@ def make_parser(parser):
 
 
 def implementation(logger, args):
-    mec = get_mec(args)
+    mec = get_mec(db=args.db, uri=args.uri)
     cobj = DataCollection(label=args.label)
     # cobj._meta["db_alias"] = mec.alias
     try:
@@ -23,9 +23,7 @@ def implementation(logger, args):
             print("here")
             logger.info("{} collection created".format(args.label))
     except NotUniqueError:
-        logger.info(
-            "Collection {} already exists. Skipped creation ".format(args.label)
-        )
+        logger.info("Collection {} already exists. Skipped creation ".format(args.label))
 
 
 def do_register(registration_list):

@@ -42,10 +42,8 @@ def make_parser(parser):
 
 
 def implementation(logger, args):
-    mec = get_mec(args)
-    dobj = PosixDataObject(
-        logger=logger, mec=mec, path=args.path, host=args.host
-    )
+    mec = get_mec(db=args.db, uri=args.uri)
+    dobj = PosixDataObject(logger=logger, mec=mec, path=args.path, host=args.host)
     dobj.reload()
     if path_exists(args.path) and args.compute:
         dobj.compute()

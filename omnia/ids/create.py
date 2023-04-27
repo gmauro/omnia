@@ -31,19 +31,15 @@ def make_parser(parser):
 
 
 def implementation(logger, args):
-    mec = get_mec(args)
+    mec = get_mec(db=args.db, uri=args.uri)
 
     try:
         with mec:
-            did = DataIdentifier(
-                label=args.label, description=args.description, url=args.url
-            )
+            did = DataIdentifier(label=args.label, description=args.description, url=args.url)
             did.save()
             logger.info("{} DataId created".format(args.label))
     except NotUniqueError:
-        logger.info(
-            "DataId {} already exists. Skipped creation ".format(args.label)
-        )
+        logger.info("DataId {} already exists. Skipped creation ".format(args.label))
     print("{}_{}".format(did.label, did.counter))
 
 

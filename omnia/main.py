@@ -69,9 +69,7 @@ def make_parser():
         version="%(prog)s {}".format(__version__),
     )
     logger_group = parser.add_argument_group("logger")
-    logger_group.add_argument(
-        "--logfile", type=str, metavar="PATH", help="log file", default=log_file
-    )
+    logger_group.add_argument("--logfile", type=str, metavar="PATH", help="log file", default=log_file)
     logger_group.add_argument(
         "--loglevel",
         type=str,
