@@ -1,28 +1,26 @@
-APPNAME=`cat omnia/APPNAME`
+APPNAME=$(shell grep name pyproject.toml|cut -f2 -d'"')
 TARGETS=build clean dependencies deploy install test uninstall
-VERSION=`cat omnia/VERSION`
+VERSION=$(shell grep version pyproject.toml|cut -f2 -d'"')
 
 all:
 	@echo "Try one of: ${TARGETS}"
 
 build: clean dependencies
-	python setup.py sdist
-	python setup.py bdist_wheel --universal
+	poetry build
 
 clean:
-	python setup.py clean --all
 	find . -name '*.pyc' -delete
 	find . -type d -name '__pycache__' -exec rm -rf {} +
 	rm -rf dist *.egg-info build
 
-dependencies: environment.yml
-	conda env update --file environment.yml
+dependencies:
+	poetry install --without dev --no-root
 
-dependencies_dev: dependencies environment_dev.yml
-	conda env update --file environment_dev.yml
+dependencies_dev:
+	poetry install --only dev --no-root
 
-deploy: build
-	twine upload dist/*
+deploy:
+	poetry install
 
 install: build
 	pip install dist/*.whl
