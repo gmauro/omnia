@@ -1,7 +1,7 @@
 from mongoengine.errors import NotUniqueError
 
 from omnia.connection import get_mec
-from omnia.ids.models import DataIdentifier
+from omnia.ids.models import DataIdentifier, Reference
 
 help_doc = """
 Create a new Data identifier
@@ -28,6 +28,12 @@ def make_parser(parser):
         type=str,
         help="URL of the new data identifier",
     )
+    parser.add_argument(
+        "-t",
+        "--title",
+        type=str,
+        help="Title of the article",
+    )
 
 
 def implementation(logger, args):
@@ -35,7 +41,8 @@ def implementation(logger, args):
 
     try:
         with mec:
-            did = DataIdentifier(label=args.label, description=args.description, url=args.url)
+            reference = Reference.objects(title=args.title)[0]
+            did = DataIdentifier(label=args.label, description=args.description, url=args.url, references=[reference])
             did.save()
             logger.info("{} DataId created".format(args.label))
     except NotUniqueError:

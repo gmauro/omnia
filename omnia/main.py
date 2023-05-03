@@ -10,7 +10,7 @@ from omnia.config_manager import ConfigurationManager
 SUBMODULES_NAMES = {
     "info": ["omnia.cli.info"],
     "dv": ["omnia.cli.del", "omnia.cli.reg", "omnia.cli.view", "omnia.cli.co"],
-    "did": ["omnia.ids.create"],
+    "did": ["omnia.ids.create", "omnia.ids.view", "omnia.ids.add_article"],
 }
 
 
@@ -25,9 +25,9 @@ class App:
     def make_subparser(self):
         subparsers = self.parser.add_subparsers(
             dest="subparser_name",
-            title="subcommands",
-            description="valid subcommands",
-            help="sub-command description",
+            title="Module commands",
+            description="valid commands",
+            help="Command description",
         )
 
         for k, h, addarg, impl in self.supported_submodules:
@@ -35,7 +35,7 @@ class App:
             addarg(subparser)
             subparser.set_defaults(func=impl)
 
-        return self.parser
+        return subparsers
 
 
 def make_parser():
@@ -105,7 +105,7 @@ def main():
     else:
         logfile = args_.logfile
         ensure_dir(pathlib.Path(logfile).parent)
-        print("Check logs at {}".format(logfile))
+        # print("Check logs at {}".format(logfile))
         logger = a_logger(
             "Main",
             log_format=log_format,

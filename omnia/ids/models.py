@@ -1,10 +1,25 @@
 from enum import Enum
 
-from mongoengine import Document, EnumField, SequenceField, StringField, URLField
+from mongoengine import (
+    Document,
+    EnumField,
+    ListField,
+    ReferenceField,
+    SequenceField,
+    StringField,
+    URLField,
+)
 
 from omnia.config_manager import ConfigurationManager
 
 cm = ConfigurationManager()
+
+
+class Reference(Document):
+    title = StringField(max_length=200, unique=True)
+    description = StringField(max_length=500)
+    url = URLField()
+    uid = StringField(max_length=200)  # Doi: ..., Pmid: ...
 
 
 class Label(Enum):
@@ -13,9 +28,10 @@ class Label(Enum):
 
 class DataIdentifier(Document):
     label = EnumField(Label, required=True)
-    description = StringField(max_length=200)
+    description = StringField(max_length=500)
     counter = SequenceField()
     url = URLField()
+    references = ListField(ReferenceField(Reference))
 
 
 # class GwasDataID:
