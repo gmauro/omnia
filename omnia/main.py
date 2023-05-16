@@ -1,131 +1,37 @@
-import argparse
-import pathlib
-from importlib import import_module
+import click
+import cloup
 
-from comoda import LOG_LEVELS, a_logger, ensure_dir
-
-from omnia import __appname__, __version__, log_file
+from omnia import __appname__, __version__, context_settings, log_file, logger
 from omnia.config_manager import ConfigurationManager
-
-SUBMODULES_NAMES = {
-    "info": ["omnia.cli.info"],
-    "dv": ["omnia.cli.del", "omnia.cli.reg", "omnia.cli.view", "omnia.cli.co"],
-    "did": ["omnia.ids.cli.add_dataidentifier", "omnia.ids.cli.show", "omnia.ids.cli.add_article"],
-}
+from omnia.ids.cli.group import did
+from omnia.info.group import info
 
 
-class App:
-    def __init__(self, parser, module):
-        self.parser = parser
-        self.supported_submodules = []
-        submodules = [import_module(n) for n in SUBMODULES_NAMES[module]]
-        for m in submodules:
-            m.do_register(self.supported_submodules)
-
-    def make_subparser(self):
-        subparsers = self.parser.add_subparsers(
-            dest="subparser_name",
-            title="Module commands",
-            description="valid commands",
-            help="Command description",
-        )
-
-        for k, h, addarg, impl in self.supported_submodules:
-            subparser = subparsers.add_parser(k, help=h)
-            addarg(subparser)
-            subparser.set_defaults(func=impl)
-
-        return subparsers
-
-
-def make_parser():
-    example_text = """examples:
-
-     omnia --version
-     omnia info show"""
-    parser = argparse.ArgumentParser(
-        prog=__appname__,
-        description="Omnia",
-        epilog=example_text,
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    parser.add_argument(
-        "-c",
-        "--configuration_file",
-        type=str,
-        metavar="PATH",
-        help="Configuration file",
-    )
-    parser.add_argument(
-        "module",
-        type=str,
-        help="Module to load",
-        choices=SUBMODULES_NAMES.keys(),
-    )
-    parser.add_argument(
-        "-v",
-        "--version",
-        action="version",
-        version="%(prog)s {}".format(__version__),
-    )
-    logger_group = parser.add_argument_group("logger")
-    logger_group.add_argument("--logfile", type=str, metavar="PATH", help="log file", default=log_file)
-    logger_group.add_argument(
-        "--loglevel",
-        type=str,
-        help="logger level.",
-        choices=LOG_LEVELS,
-        default="INFO",
-    )
-    mongodb_group = parser.add_argument_group("MongoDB")
-    mongodb_group.add_argument(
-        "--db",
-        type=str,
-        help="DB's label",
-    )
-    mongodb_group.add_argument(
-        "--uri",
-        type=str,
-        help="URI string for the connection to the MongoDB server",
-    )
-    return parser
-
-
-# https://towardsdatascience.com/dynamically-add-arguments-to-argparse-python-patterns-a439121abc39
-def main():
-    parser = make_parser()
-    args_, _ = parser.parse_known_args()
-    cm = ConfigurationManager(args=args_)
-
-    args_.log_level = cm.get_loglevel
-    log_format = cm.get_logformat
-
-    if args_.logfile == "stdout":
-        logger = a_logger("Main", log_format=log_format, level=args_.loglevel)
+@cloup.group(name="main", help="Omnia", no_args_is_help=True, epilog="EPILOG", context_settings=context_settings)
+@click.version_option(version=__version__)
+@cloup.option("-c", "--configuration_file", help="Configuration file.")
+@cloup.option("-q", "--quiet", default=False, is_flag=True, help="Set log verbosity")
+@cloup.option_group(
+    "MongoDB options",
+    cloup.option("--db", help="DB's label."),
+    cloup.option("--uri", help="URI string for the connection to the MongoDB server."),
+)
+@click.pass_context
+def cli(ctx, configuration_file, quiet, db, uri):
+    if quiet:
+        logger.add(log_file, level="INFO", rotation="13:00")
     else:
-        logfile = args_.logfile
-        ensure_dir(pathlib.Path(logfile).parent)
-        # print("Check logs at {}".format(logfile))
-        logger = a_logger(
-            "Main",
-            log_format=log_format,
-            level=args_.loglevel,
-            filename=logfile,
-        )
-
-    app = App(parser, args_.module)
-    app.make_subparser()
-    args = parser.parse_args()
-
-    if args.db is None:
-        args.db = cm.get_mdbc_db
-
-    if args.uri is None:
-        args.uri = cm.get_mdbc_uri
-
+        logger.add(log_file, level="DEBUG", rotation="13:00")
     logger.info("{} started".format(__appname__.capitalize()))
-    args.func(logger, args) if hasattr(args, "func") else parser.print_help()
-    logger.info("{} ended".format(__appname__.capitalize()))
+    ctx.obj = ConfigurationManager(cf=configuration_file, db=db, uri=uri)
+    pass
+
+
+def main():
+    cli.add_command(did)
+    cli.add_command(info)
+    logger.remove()
+    cli()
 
 
 if __name__ == "__main__":

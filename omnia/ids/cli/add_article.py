@@ -1,5 +1,8 @@
+import click
+import cloup
 from mongoengine.errors import NotUniqueError
 
+from omnia import logger
 from omnia.connection import get_mec
 from omnia.ids.models import Reference
 
@@ -8,42 +11,25 @@ Create a new Article object
 """
 
 
-def make_parser(parser):
-    parser.add_argument(
-        "-t",
-        "--title",
-        type=str,
-        help="Title of the article",
-    )
-    parser.add_argument(
-        "-d",
-        "--description",
-        type=str,
-        help="Description of the new data identifier",
-    )
-    parser.add_argument(
-        "--url",
-        type=str,
-        help="URL of the new data identifier",
-    )
-    parser.add_argument(
-        "--uid",
-        type=str,
-        help="unique id of the article e.g.: doi:... pmid:...",
-    )
-
-
-def implementation(logger, args):
-    mec = get_mec(db=args.db, uri=args.uri)
-
+@cloup.command("add_article", no_args_is_help=True, help=help_doc)
+@cloup.option("-t", "--title", help="Article title")
+@cloup.option(
+    "-d",
+    "--description",
+    help="Article description",
+)
+@cloup.option(
+    "--url",
+    help="Article URL",
+)
+@cloup.option("--uid", help="Article unique id e.g.: doi:... pmid:...")
+@click.pass_obj
+def add_article(cm, title, description, url, uid):
+    mec = get_mec(cm.get_mdbc_db, cm.get_mdbc_uri)
     try:
         with mec:
-            article = Reference(title=args.title, description=args.description, url=args.url, uid=args.uid)
+            article = Reference(title=title, description=description, url=url, uid=uid)
             article.save()
-            logger.info("{} article created".format(args.title))
+            logger.info("{} article created".format(title))
     except NotUniqueError:
-        logger.info("DataId {} already exists. Skipped creation ".format(args.title))
-
-
-def do_register(registration_list):
-    registration_list.append(("add_article", help_doc, make_parser, implementation))
+        logger.info("Article {} already exists. Skipped creation ".format(title))
