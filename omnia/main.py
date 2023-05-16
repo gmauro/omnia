@@ -7,7 +7,7 @@ from omnia.ids.cli.group import did
 from omnia.info.group import info
 
 
-@cloup.group(name="main", help="Omnia", no_args_is_help=True, epilog="EPILOG", context_settings=context_settings)
+@cloup.group(name="main", help="Omnia", no_args_is_help=True, context_settings=context_settings)
 @click.version_option(version=__version__)
 @cloup.option("-c", "--configuration_file", help="Configuration file.")
 @cloup.option("-q", "--quiet", default=False, is_flag=True, help="Set log verbosity")
