@@ -30,7 +30,7 @@ tag:
 
 test:
 	@echo "Testing"
-	python -m unittest discover -s tests
+	python3 -m unittest discover -s tests
 
 uninstall:
 	pip uninstall -y ${APPNAME}
