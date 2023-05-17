@@ -19,9 +19,9 @@ from omnia.info.group import info
 @click.pass_context
 def cli(ctx, configuration_file, quiet, db, uri):
     if quiet:
-        logger.add(log_file, level="INFO", rotation="13:00")
+        logger.add(log_file, level="INFO", retention="30 days")
     else:
-        logger.add(log_file, level="DEBUG", rotation="13:00")
+        logger.add(log_file, level="DEBUG", retention="30 days")
     logger.info("{} started".format(__appname__.capitalize()))
     ctx.obj = ConfigurationManager(cf=configuration_file, db=db, uri=uri)
     pass
