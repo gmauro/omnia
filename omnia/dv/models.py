@@ -2,7 +2,6 @@
 import datetime
 import platform
 
-from comoda import a_logger
 from mongoengine import (
     DateTimeField,
     Document,
@@ -12,7 +11,7 @@ from mongoengine import (
     StringField,
 )
 
-from omnia import log_file
+from omnia import logger
 from omnia.config_manager import ConfigurationManager
 from omnia.connection import get_mec
 from omnia.utils import compute_sha256, get_file_size, guess_mimetype
@@ -51,13 +50,7 @@ class PosixDataObject:
         prefix = "posix"
         tags = kwargs.get("tags", [])
 
-        logfile = kwargs.get("logfile", log_file)
-        loglevel = kwargs.get("loglevel", "INFO")
-        logger = kwargs.get("logger", None)
-        if logger is None:
-            self.logger = a_logger(self.__class__.__name__, level=loglevel, filename=logfile)
-        else:
-            self.logger = logger
+        self.logger = logger
 
         self.mec = kwargs.get("mec", get_mec())
         self.dobj = DataObject(
