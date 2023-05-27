@@ -7,6 +7,7 @@ Generic utilities used by other modules.
 import hashlib
 import mimetypes
 import pathlib
+import re
 
 import magic
 
@@ -55,3 +56,10 @@ def get_file_size(fname):
     :return: file's size as integer
     """
     return pathlib.PosixPath(fname).stat().st_size
+
+
+def is_a_valid_identifier(prefix, identifier):
+    regex = "^{}[_][0-9]+".format(prefix)
+    if not re.match(regex, identifier):
+        raise ValueError("{} is not a valid identifier".format(identifier))
+    return identifier

@@ -47,7 +47,7 @@ class TestDataObject(unittest.TestCase):
             assert fresh_dobj.path == self.path
             assert fresh_dobj.prefix == prefix
             self.assertIn(tags[0], fresh_dobj.tags)
-            self.assertIn(tags[0], fresh_dobj.tags)
+            self.assertIn(tags[1], fresh_dobj.tags)
             assert fresh_dobj.description == description
             self.assertIsNotNone(fresh_dobj.creation_date)
 
