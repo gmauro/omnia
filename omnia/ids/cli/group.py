@@ -1,8 +1,9 @@
 import cloup
 
 from omnia.ids.cli.add_article import add_article
-from omnia.ids.cli.add_dataidentifier import create
+from omnia.ids.cli.add_dataidentifier import add_trait
 from omnia.ids.cli.show import show
+from omnia.ids.cli.update_dataidentifier import update
 
 
 @cloup.group(
@@ -16,5 +17,6 @@ def did(ctx):
 
 
 did.add_command(show)
-did.add_command(create)
+did.add_command(add_trait)
 did.add_command(add_article)
+did.add_command(update)

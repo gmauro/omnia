@@ -25,6 +25,7 @@ from omnia.utils import is_a_valid_identifier
 
 class DataType(Enum):
     GWAS = "gwas"
+    ARTICLE = "article"
 
 
 class DataIdentifier(Document):
@@ -40,31 +41,113 @@ class DataIdentifier(Document):
 
 
 class Reference(DataIdentifier):
-    title = StringField(max_length=200, unique=True)
-    uid = StringField(max_length=200, unique=True)  # doi:..., pmid:...
+    title = StringField(max_length=200, sparse=True, required=True, unique=True)
+    ext_uid = StringField(max_length=200, sparse=True, unique=True)  # doi:..., pmid:...
 
 
-class GwasDataIdentifier(DataIdentifier):
-    note = StringField(max_length=500)
+class ReferenceID(MongoMixin):
+    def __init__(self, **kwargs):
+        uk = is_a_valid_identifier(DataType.ARTICLE.value, kwargs.get("uk"))
+        title = kwargs.get("title", None)
+        datatype = DataType.ARTICLE
+        description = kwargs.get("description", None)
+        self._klass = kwargs.get("klass", Reference)
+        url = kwargs.get("url", None)
+        ext_uid = kwargs.get("uid", None)
+
+        self._mec = kwargs.get("mec", get_mec())
+        self._obj = self._klass(
+            unique_key=uk, title=title, datatype=datatype, description=description, url=url, ext_uid=ext_uid
+        )
+
+    @property
+    def pk(self):
+        """
+        the primary key of the object known by MongoDB
+        """
+        return self._obj.pk
+
+    @property
+    def mec(self):
+        return self._mec
+
+    @property
+    def mdb_obj(self):
+        return self._obj
+
+    @property
+    def klass(self):
+        return self._klass
+
+    @property
+    def uk(self):
+        """
+        the unique key of the object known by the user
+        """
+        return self._obj.unique_key
+
+    @uk.setter
+    def uk(self, d):
+        self._obj.unique_key = is_a_valid_identifier(DataType.GWAS.value, d)
+
+    @property
+    def title(self):
+        return self._obj.title
+
+    @title.setter
+    def title(self, t):
+        self._obj.title = t
+
+    @property
+    def description(self):
+        return self._obj.description
+
+    @description.setter
+    def description(self, d):
+        self._obj.description = d
+
+    @property
+    def url(self):
+        return self._obj.url
+
+    @url.setter
+    def url(self, u):
+        self._obj.url = u
+
+    @property
+    def uid(self):
+        return self._obj.ext_uid
+
+    @uid.setter
+    def uid(self, u):
+        self._obj.ext_uid = u
+
+
+class GwasTrait(DataIdentifier):
+    notes = ListField(StringField(max_length=500))
     references = ListField(ReferenceField(Reference))
 
 
-class GwasDataID(MongoMixin):
+class GwasTraitID(MongoMixin):
     def __init__(self, **kwargs):
         uk = is_a_valid_identifier(DataType.GWAS.value, kwargs.get("uk"))
         datatype = DataType.GWAS
         description = kwargs.get("description", None)
-        self._klass = kwargs.get("klass", GwasDataIdentifier)
+        notes = kwargs.get("notes", None)
+        self._klass = kwargs.get("klass", GwasTrait)
         tags = kwargs.get("tags", [])
         url = kwargs.get("url", None)
+        references = kwargs.get("references", [])
 
         self._mec = kwargs.get("mec", get_mec())
         self._obj = self._klass(
             unique_key=uk,
             datatype=datatype,
             description=description,
+            notes=notes,
             url=url,
             tags=tags,
+            references=references,
         )
 
     @property
@@ -104,6 +187,16 @@ class GwasDataID(MongoMixin):
     @description.setter
     def description(self, d):
         self._obj.description = d
+
+    @property
+    def notes(self):
+        return self._obj.notes
+
+    @notes.setter
+    def notes(self, notes):
+        for note in notes:
+            if note not in self._obj.notes:
+                self._obj.notes.append(note)
 
     @property
     def tags(self):

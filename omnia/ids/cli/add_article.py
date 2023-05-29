@@ -4,10 +4,10 @@ from mongoengine.errors import NotUniqueError
 
 from omnia import logger
 from omnia.connection import get_mec
-from omnia.ids.models import Reference
+from omnia.ids.models import DataType, Reference, ReferenceID
 
 help_doc = """
-Create a new Article object
+Create a new Article object.
 """
 
 
@@ -28,7 +28,9 @@ def add_article(cm, title, description, url, uid):
     mec = get_mec(cm.get_mdbc_db, cm.get_mdbc_uri)
     try:
         with mec:
-            article = Reference(title=title, description=description, url=url, uid=uid)
+            num_objects = Reference.objects().count()
+            uk = "{}_{}".format(DataType.ARTICLE.value, num_objects + 1)
+            article = ReferenceID(uk=uk, title=title, description=description, url=url, uid=uid, mec=mec)
             article.save()
             logger.info("{} article created".format(title))
     except NotUniqueError:

@@ -3,7 +3,7 @@ import unittest
 import mongomock
 from mongoengine import connect, disconnect, get_connection
 
-from omnia.ids.models import GwasDataID, GwasDataIdentifier
+from omnia.ids.models import GwasTrait, GwasTraitID
 
 
 class TestGwasDataIDOffline(unittest.TestCase):
@@ -11,28 +11,28 @@ class TestGwasDataIDOffline(unittest.TestCase):
         """
         If gwas_did_obj is not mapped, then gwas_did_obj.pk has to be None
         """
-        gwas_did_obj = GwasDataID(uk="gwas_1")
+        gwas_did_obj = GwasTraitID(uk="gwas_1")
         assert gwas_did_obj.pk is None
 
     def test_gwasDataID_uk(self):
         good = ["gwas_1", "gwas_12345678"]
         for i in good:
-            gwas_did_obj = GwasDataID(uk=i)
+            gwas_did_obj = GwasTraitID(uk=i)
             assert gwas_did_obj.uk == i
 
         bad = ["gwas_a1", "xwas_1", "gwas-1", "gwas:1", "gwa_1"]
         for i in bad:
-            self.assertRaises(ValueError, GwasDataID, uk=i)
+            self.assertRaises(ValueError, GwasTraitID, uk=i)
 
 
 class TestGwasDataID(unittest.TestCase):
     def setUp(self) -> None:
         self.uk = "gwas_1"
         self.mec = get_connection()
-        self.gdid = GwasDataID(mec=self.mec, uk=self.uk)
+        self.gdid = GwasTraitID(mec=self.mec, uk=self.uk)
 
     def tearDown(self) -> None:
-        GwasDataIdentifier.objects().first().delete()
+        GwasTrait.objects().first().delete()
 
     @classmethod
     def setUpClass(cls):
@@ -86,11 +86,11 @@ class TestGwasDataID(unittest.TestCase):
         description = "description text"
         url = "http://url.it"
 
-        gdid = GwasDataID(uk=uk, description=description, url=url, tags=tags, mec=self.mec)
+        gdid = GwasTraitID(uk=uk, description=description, url=url, tags=tags, mec=self.mec)
         gdid.save()
 
         with self.mec:
-            mdb_obj = GwasDataIdentifier.objects().first()
+            mdb_obj = GwasTrait.objects().first()
             assert mdb_obj.unique_key == uk
             self.assertIn(tags[0], mdb_obj.tags)
             self.assertIn(tags[1], mdb_obj.tags)
@@ -113,7 +113,7 @@ class TestGwasDataID(unittest.TestCase):
         description = ["text1", "text2"]
         url = ["http://url.it", "http://url.com"]
 
-        gdid = GwasDataID(uk=uk[0], description=description[0], url=url[0], tags=tags[0], mec=self.mec)
+        gdid = GwasTraitID(uk=uk[0], description=description[0], url=url[0], tags=tags[0], mec=self.mec)
         gdid.save()
 
         result = gdid.modify(unique_key=uk[1], description=description[1], url=url[1], tags=tags[1])
@@ -121,7 +121,7 @@ class TestGwasDataID(unittest.TestCase):
         self.assertTrue(result)
 
         with self.mec:
-            mdb_obj = GwasDataIdentifier.objects().first()
+            mdb_obj = GwasTrait.objects().first()
             assert mdb_obj.unique_key == uk[1]
             self.assertIn(tags[1][0], mdb_obj.tags)
             self.assertIn(tags[1][1], mdb_obj.tags)
@@ -134,11 +134,11 @@ class TestGwasDataID(unittest.TestCase):
         gdid = self.gdid
         gdid.save()
 
-        objects = GwasDataIdentifier.objects()
+        objects = GwasTrait.objects()
         assert len(objects) == 1
 
         gdid.delete()
-        objects = GwasDataIdentifier.objects()
+        objects = GwasTrait.objects()
         assert len(objects) == 0
 
         # to avoid raising exception in TearDown

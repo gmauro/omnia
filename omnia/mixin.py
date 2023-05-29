@@ -28,7 +28,7 @@ class MongoMixin:
             if (objs.count()) == 1:
                 msg = "mapping, {} DataIdentifier found".format(len(objs))
                 logger.debug(msg)
-                self.mdb_obj.pk = objs[0].pk
+                self.mdb_obj.id = objs[0].id
                 return True
             return False
 
