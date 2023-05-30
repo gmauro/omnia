@@ -45,7 +45,7 @@ def show(cm, format, label, title):
             if datatype == "gwas":
                 to_extract = ("desc", "url", "articles")
             else:
-                to_extract = ("title", "url")
+                to_extract = ("desc", "title", "url", "uid")
             if format == "box":
                 print(f"{unique_key}")
                 for k, v in detail.items():
@@ -53,9 +53,12 @@ def show(cm, format, label, title):
                         print("  {}: {}".format(k, v))
             else:
                 array = [unique_key]
-                for k, v in detail.items():
-                    if k in to_extract and v is not None:
+                for k in to_extract:
+                    v = detail[k]
+                    if v is not None:
                         array.append(v)
+                    else:
+                        array.append("")
                 print(*array, sep=",")
     except IndexError:
         print("Not found - A document with this label/title has not been recorded yet")
