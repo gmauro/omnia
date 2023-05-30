@@ -58,12 +58,12 @@ class MongoMixin:
         """
         Return object's detail in JSON format
         """
-        desc = {}
+        detail = {}
         if self.ensure_is_mapped("view"):
             with self.mec:
-                desc = self.klass.objects(unique_key=self.uk).as_pymongo()[0]
-                logger.debug(desc)
-        return desc
+                detail = self.klass.objects(unique_key=self.uk).as_pymongo()[0]
+                logger.debug(detail)
+        return detail
 
     def modify(self, **kwargs):
         """

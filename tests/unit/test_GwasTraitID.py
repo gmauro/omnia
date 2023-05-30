@@ -101,9 +101,10 @@ class TestGwasDataID(unittest.TestCase):
 
     def test_view(self):
         gdid = self.gdid
-        self.assertFalse(gdid.view())
+        self.assertIs(type(gdid.view()), dict)
+        assert len(gdid.view()) == 0
+
         gdid.save()
-        self.assertIsNotNone(gdid.view())
         self.assertIs(type(gdid.view()), dict)
         assert len(gdid.view()) > 0
 
