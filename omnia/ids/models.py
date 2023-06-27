@@ -15,17 +15,31 @@ from omnia.connection import get_mec
 from omnia.mixin import MongoMixin
 from omnia.utils import is_a_valid_identifier
 
+
+def validate_identifier(i, custom_list=None):
+    list_to_check_against = custom_list if custom_list else [dtype.value for _, dtype in enumerate(DataType)]
+
+    return is_a_valid_identifier(list_to_check_against, i)
+
+
+def get_datatype(i):
+    identifier = validate_identifier(i)
+    return DataType(identifier.split("_")[0])
+
+
 # Data identifier
 # An identifier that uniquely distinguishes one set of data from all others.
-# Examples include: Archival Resource Key (ARK); Digital Object Identiers (DOI);
+# Examples include: Archival Resource Key (ARK); Digital Object Identifiers (DOI);
 # Extensible Resource Identi?er (XRI); HANDLE; Life Science ID (LSID);
-# Object Identi?ers (OID); Persistent Uniform Resource Locators (PURL);
+# Object Identifiers (OID); Persistent Uniform Resource Locators (PURL);
 # URI/URN/URL; UUID.
 
 
 class DataType(Enum):
-    GWAS = "gwas"
     ARTICLE = "article"
+    EQTL = "eqtl"
+    GWAS = "gwas"
+    PQTL = "pqtl"
 
 
 class DataIdentifier(Document):
@@ -47,7 +61,7 @@ class Reference(DataIdentifier):
 
 class ReferenceID(MongoMixin):
     def __init__(self, **kwargs):
-        uk = is_a_valid_identifier(DataType.ARTICLE.value, kwargs.get("uk"))
+        uk = validate_identifier(kwargs.get("uk"), [DataType.ARTICLE.value])
         title = kwargs.get("title", None)
         datatype = DataType.ARTICLE
         description = kwargs.get("description", None)
@@ -88,7 +102,7 @@ class ReferenceID(MongoMixin):
 
     @uk.setter
     def uk(self, d):
-        self._obj.unique_key = is_a_valid_identifier(DataType.GWAS.value, d)
+        self._obj.unique_key = validate_identifier(d)
 
     @property
     def title(self):
@@ -123,18 +137,18 @@ class ReferenceID(MongoMixin):
         self._obj.ext_uid = u
 
 
-class GwasTrait(DataIdentifier):
+class GvsTrait(DataIdentifier):
     notes = ListField(StringField(max_length=500))
     references = ListField(ReferenceField(Reference))
 
 
-class GwasTraitID(MongoMixin):
+class GvsTraitID(MongoMixin):
     def __init__(self, **kwargs):
-        uk = is_a_valid_identifier(DataType.GWAS.value, kwargs.get("uk"))
-        datatype = DataType.GWAS
+        uk = validate_identifier(kwargs.get("uk"))
+        datatype = kwargs.get("datatype", get_datatype(uk))
         description = kwargs.get("description", None)
         notes = kwargs.get("notes", None)
-        self._klass = kwargs.get("klass", GwasTrait)
+        self._klass = kwargs.get("klass", GvsTrait)
         tags = kwargs.get("tags", [])
         url = kwargs.get("url", None)
         references = kwargs.get("references", [])
@@ -178,7 +192,11 @@ class GwasTraitID(MongoMixin):
 
     @uk.setter
     def uk(self, d):
-        self._obj.unique_key = is_a_valid_identifier(DataType.GWAS.value, d)
+        self._obj.unique_key = validate_identifier(d, [DataType.GWAS.value])
+
+    @property
+    def datatype(self):
+        return self._obj.datatype
 
     @property
     def description(self):

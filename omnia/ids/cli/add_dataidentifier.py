@@ -4,7 +4,7 @@ from mongoengine.errors import NotUniqueError
 
 from omnia import logger
 from omnia.connection import get_mec
-from omnia.ids.models import DataIdentifier, GwasTraitID
+from omnia.ids.models import DataIdentifier, GvsTraitID
 
 help_doc = """
 Create a new Data identifier for a phenotypic trait
@@ -32,7 +32,7 @@ def add_trait(cm, label, description, url, title):
             references = []
             if title:
                 references = [DataIdentifier.objects(title=title)[0]]
-            trait = GwasTraitID(uk=label, description=description, url=url, references=references, mec=mec)
+            trait = GvsTraitID(uk=label, description=description, url=url, references=references, mec=mec)
             trait.save()
             logger.info("{} DataId created".format(label))
     except NotUniqueError as e:

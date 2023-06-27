@@ -58,8 +58,15 @@ def get_file_size(fname):
     return pathlib.PosixPath(fname).stat().st_size
 
 
-def is_a_valid_identifier(prefix, identifier):
-    regex = "^{}[_][0-9]+".format(prefix)
-    if not re.match(regex, identifier):
-        raise ValueError("{} is not a valid identifier".format(identifier))
-    return identifier
+def is_a_valid_identifier(prefixes, identifier):
+    """
+    Loop through the prefixes and check if the identifier matches the pattern.
+    Raise a value error if it doesn't found a match, otherwise return the identifier
+    :param prefixes: iterable
+    :param identifier: string
+    :return: string
+    """
+    if any(re.match(f"{prefix}_[0-9]+", identifier) for prefix in prefixes):
+        return identifier
+    else:
+        raise ValueError(f"{identifier} is not a valid identifier")
