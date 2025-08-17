@@ -21,7 +21,12 @@ share/python-wheels/
 *.egg
 MANIFEST
 
+# poetry
+poetry.lock
 
 # Cache
 *.pyc
 __pycache__
+
+# Custom directories
+wip/

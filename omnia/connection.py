@@ -1,6 +1,7 @@
 """
 Manager to handle Mongoengine's connection
 """
+
 from mongoengine import connect, disconnect
 
 from omnia.config_manager import ConfigurationManager

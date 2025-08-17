@@ -33,7 +33,7 @@ def make_parser(parser):
         help="Compute file details",
     )
     parser.add_argument(
-        "--cs" "--collections",
+        "--cs--collections",
         dest="cs",
         nargs="+",
         help="Document belongs to this collections",

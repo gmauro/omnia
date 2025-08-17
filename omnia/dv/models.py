@@ -1,4 +1,5 @@
-""" Mongo's models """
+"""Mongo's models"""
+
 import datetime
 import platform
 
@@ -161,7 +162,7 @@ class PosixDataObject:
             return True
         else:
             self.logger.warning(
-                "Document {} does not exist on remote, " "skipping {} operation".format(self.unique_key, op)
+                "Document {} does not exist on remote, skipping {} operation".format(self.unique_key, op)
             )
             return False
 
@@ -200,7 +201,7 @@ class PosixDataObject:
                     result = self.dobj.modify(**kwargs)
                     self.logger.info("{} modified".format(self.unique_key))
             else:
-                self.logger.warning("No update parameters, " "skipping the operation")
+                self.logger.warning("No update parameters, skipping the operation")
         return result
 
     def view(self):

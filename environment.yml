@@ -1,0 +1,9 @@
+name: omnia
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - python=3.13.*
+  - mamba
+  - poetry=2.*
+  - make
