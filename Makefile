@@ -26,7 +26,7 @@ create-env:
 	@if conda env list | grep "^${ENV_NAME} " >/dev/null 2>&1; then \
  		echo "Environment ${ENV_NAME} already exists."; \
  	else \
- 		conda env create --file environment.yml; \
+ 		conda env create --file base_environment.yml; \
  	fi
 
 dependencies:

@@ -1,9 +1,0 @@
-# MongoDB connection
-mdbc:
-  db: "omnia"
-  uri: "mongodb://"
-
-
-# Logger details
-loglevel: "INFO"
-logformat: "%(asctime)s|%(levelname)-8s|%(name)s |%(module)s |%(message)s"

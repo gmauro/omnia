@@ -1,0 +1,3 @@
+# MongoDB connection
+mdbc:
+  uri: "mongodb://localhost:27018/omnia"

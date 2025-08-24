@@ -1,6 +1,6 @@
 [project]
 name = "omnia"
-version = "0.3.2"
+version = "0.4.0"
 description = "Omnia Data Catalogue: Provides a searchable inventory of data assets, enriched with both system and user-defined metadata."
 authors = [{ name = "Gianmauro Cuccuru", email = "gmauro@gmail.com"}]
 readme = "README.md"
@@ -13,20 +13,21 @@ classifiers = [
     "Environment :: Console",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
-    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.13",
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Topic :: Scientific/Engineering :: Bio-Informatics",
 ]
 dependencies = [
-    "appdirs (>=1.4.4,<2.0.0)",
     "click (>=8.2.1,<9.0.0)",
     "cloup (>=3.0.8,<4.0.0)",
     "loguru (>=0.7.3,<0.8.0)",
     "mongoengine (>=0.29.1,<0.30.0)",
     "python-magic (>=0.4.27,<0.5.0)",
-    "comoda (>=0.4.2,<0.5.0)",
+    "platformdirs (>=4.3.8,<5.0.0)",
+    "pydantic (>=2.11.7,<3.0.0)",
+    "ruamel-yaml (>=0.18.14,<0.19.0)",
 ]
-requires-python = ">=3.10,<3.14"
+requires-python = ">=3.11,<3.14"
 
 [project.scripts]
 omnia = 'omnia.main:main'
@@ -43,6 +44,20 @@ pytest-randomly = "^3.16.0"
 
 [tool.ruff]
 line-length = 120
+target-version = "py313"
+
+[tool.ruff.lint]
+select = [
+    "B",  # bugbear: security warnings
+    "E",  # pycodestyle
+    "F",  # pyflakes
+    "ISC",  # implicit string concatenation
+    "UP",  # alert you when better syntax is available in your python version
+    "I",  # sort imports alphabetically
+]
+
+[tool.deptry.per_rule_ignores]
+DEP003 = ["omnia"]
 
 
 [build-system]
