@@ -41,12 +41,11 @@ class JSONField(StringField):
             raise ValidationError("Invalid JSON value")
 
 
-class DataCollection(Document):
-    """Base class for a collection of data objects."""
+class Dataset(Document):
+    """Base class for a set of data objects."""
 
     title = StringField(max_length=200, sparse=True, required=True, unique=True)
     description = StringField(max_length=200)
-    ext_uid = StringField(max_length=200, sparse=True, unique=True)  # doi:..., pmid:...
     tags = ListField(StringField(max_length=50))
 
     @classmethod
@@ -62,12 +61,12 @@ class DataCollection(Document):
         return tuple(field.name for field in cls._fields.values() if isinstance(field, JSONField))
 
 
-class Dataset(MongoMixin):
+class DataCollection(MongoMixin):
     """Represents a collection of data objects"""
 
     def __init__(self, **kwargs):
         self.logger = logger
-        self._klass = kwargs.get("klass", DataCollection)
+        self._klass = kwargs.get("klass", Dataset)
         uri = kwargs.get("uri")
         self._mec = get_mec(uri=uri) if uri else kwargs.get("mec", get_mec())
 
@@ -75,7 +74,6 @@ class Dataset(MongoMixin):
             title=kwargs.get("title"),
             description=kwargs.get("description", None),
             tags=kwargs.get("tags", []),
-            ext_uid=kwargs.get("ext_uid", None),
         )
 
     @property
@@ -88,7 +86,7 @@ class Dataset(MongoMixin):
         return self._mec
 
     @property
-    def mdb_obj(self) -> DataCollection:
+    def mdb_obj(self) -> Dataset:
         """Get the underlying MongoDB object."""
         return self._obj
 
@@ -114,12 +112,12 @@ class DataObject(Document):
     """Base class for data objects."""
 
     checksum = StringField()
-    collections = ListField(ReferenceField(DataCollection))
-    creation_date = DateTimeField(default=datetime.datetime.now(), read_only=True)
-    data_id = StringField(max_length=25, required=True)
+    collections = ListField(ReferenceField(Dataset))
+    creation_date = DateTimeField(default=datetime.datetime.now())
+    data_id = StringField(max_length=25, required=True, unique=True)
     description = StringField(max_length=200)
     file_size = IntField()
-    host = StringField(required=True, unique_with="path")
+    host = StringField(required=True)
     mimetype = StringField()
     modification_date = DateTimeField()
     path = StringField(required=True)
@@ -157,12 +155,10 @@ class PosixDataObject(MongoMixin):
 
         self._obj = self._klass(
             collections=kwargs.get("collections", []),
-            description=kwargs.get("description", None),
             data_id=kwargs.get("data_id"),
             host=kwargs.get("host", platform.node()),
             path=kwargs.get("path", None),
             prefix="posix",
-            tags=kwargs.get("tags", []),
             checksum=None,
             file_size=None,
             mimetype=None,
@@ -193,12 +189,12 @@ class PosixDataObject(MongoMixin):
     @property
     def unique_key(self) -> str:
         """Get a unique key for the object."""
-        return f"{self.mdb_obj.data_id}:{self.mdb_obj.path}"
+        return f"{self.mdb_obj.data_id}"
 
     @property
     def unique_key_dict(self) -> dict:
         """Get a unique key  for the object."""
-        return {"data_id": self.mdb_obj.data_id, "path": self.mdb_obj.path}
+        return {"data_id": self.mdb_obj.data_id}
 
     # end of required attributes
 

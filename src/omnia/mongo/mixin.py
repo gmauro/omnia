@@ -51,40 +51,48 @@ class MongoMixin:
     @property
     def is_mapped(self) -> bool:
         with self.mec:
-            return self.map()
+            #  len() is much slower than count()
+            count = self.klass.objects(**self.unique_key_dict).count()
+            if count == 1:
+                logger.debug(f" {count} {self.klass.__name__} found")
+                return True
+            logger.debug(f" {count} {self.klass.__name__} found")
+            return False
 
-    def map(self) -> bool:
+    def delete(self) -> None:
+        """
+        Delete the Document from the database and unmap the local object.
+        This will only take effect if the document has been previously saved.
+        """
+        if self.is_mapped:
+            with self.mec:
+                self.mdb_obj.delete()
+                logger.info(f"{self.unique_key} deleted")
+            self.mdb_obj.id = None
+
+    def map(self):
         """
         Maps the current object to an existing object in the database if found.
 
         Returns:
-            bool: True if mapping was successful, False otherwise.
+            The current object if a unique match is found, otherwise None.
         """
         with self.mec:
             objs = self.klass.objects(**self.unique_key_dict)
-            if (objs.count()) == 1:
-                logger.debug(f"Mapping, {len(objs)} {self.klass.__name__} found")
-                self.mdb_obj.id = objs[0].id
+            #  len() is much slower than count()
+            count = objs.count()
+            if count == 1:
+                logger.debug(f"Mapping, {count} {self.klass.__name__} found")
 
-                # Update read-only fields
-                read_only_fields = {
-                    key: getattr(objs[0], key)
-                    for key, value in self.mdb_obj._fields.items()
-                    if hasattr(value, "read_only")
-                }
+                # Reload object fields from the db object
+                obj_fields = {key: getattr(objs[0], key) for key, value in self.mdb_obj._fields.items()}
 
-                for key, value in read_only_fields.items():
+                for key, value in obj_fields.items():
                     logger.debug(f"Setting read-only field: {key}")
                     setattr(self.mdb_obj, key, value)
 
-                return True
-            return False
-
-    def ensure_is_mapped(self, op: str | None = None) -> bool:
-        if not self.map():
-            logger.warning(f"Document {self.unique_key} does not exist on remote, skipping {op} operation")
-            return False
-        return True
+                return self
+            return None
 
     def save(self, **kwargs):
         """
@@ -183,7 +191,7 @@ class MongoMixin:
             bool: True if the document was updated successfully, False if the document
                   in the database doesn't match the query or if mapping is not ensured.
         """
-        if not self.ensure_is_mapped("modify"):
+        if not self.is_mapped:
             logger.debug(f"Mapping not ensured, cannot update document {self.unique_key}")
             return False
 
@@ -197,14 +205,3 @@ class MongoMixin:
                 logger.info(f"Failed to update document {self.unique_key}")
 
             return update_result
-
-    def delete(self, **kwargs) -> None:
-        """
-        Delete the Document from the database and unmap the local object.
-        This will only take effect if the document has been previously saved.
-        """
-        if self.ensure_is_mapped("delete"):
-            with self.mec:
-                self.mdb_obj.delete(**kwargs)
-                logger.info(f"{self.unique_key} deleted")
-            self.mdb_obj.id = None

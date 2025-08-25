@@ -1,9 +1,8 @@
 import click
 import cloup
 
-from omnia.mongo.connection_manager import get_mec
-from omnia.mongo.models import DataCollection, Dataset, PosixDataObject
-from omnia.mongo.mongo_manager import get_mongo_uri, manage_mongo
+from omnia.mongo.models import DataCollection
+from omnia.mongo.mongo_manager import embedded_mongo, get_mongo_uri
 
 HELP_DOC = "Manage collections in the database."
 
@@ -15,40 +14,32 @@ def co():
 
 
 @co.command("add", no_args_is_help=True, help="Add a new collection to the database.")
-@cloup.option("--label", help="Collection's label", required=True)
+@cloup.argument("title", help="Collection's title", required=True)
 @cloup.option("--description", help="Collection's description")
-@cloup.option("--ext-uid", help="Collection's external UID")
 @cloup.option("--tags", help="Collection's tags", multiple=True)
 @click.pass_context
-def add_collection(
-    ctx: click.Context, label: str, description: str = None, ext_uid: str = None, tags: list = None
-) -> None:
+def add_collection(ctx: click.Context, title: str, description: str = None, tags: list = None) -> None:
     """
     Add a collection to the database if it doesn't exist.
     If it exists, display its details.
 
     Args:
         ctx: Click context object.
-        label: Label for the collection.
+        title: title for the collection.
         description: Description for the collection.
-        ext_uid: External UID for the collection.
         tags: Tags for the collection.
     """
-    with manage_mongo(ctx):
+    with embedded_mongo(ctx):
         mongo_uri = get_mongo_uri(ctx)
 
         collection_data = {
-            "title": label,
+            "title": title,
             "description": description,
-            "ext_uid": ext_uid,
             "tags": tags,
         }
 
-        collection = Dataset(uri=mongo_uri, **collection_data)
+        collection = DataCollection(uri=mongo_uri, **collection_data)
         collection.save()
-        import time
-
-        time.sleep(30)  # Wait
 
     # Print the title as the main title
     print(f"\n{'=' * 40}")
@@ -61,98 +52,59 @@ def add_collection(
             print(f"  - {field_name}: {collection.mdb_obj[field_name]}")
 
 
-@co.command("ed", aliases=["edit"], help="Edit an existing collection in the database.")
-@cloup.option("--label", help="Collection's label", required=True)
-@cloup.option("--description", help="New description for the collection")
-@cloup.option("--ext-uid", help="New external UID for the collection")
+@co.command("ed", aliases=["edit"], no_args_is_help=True, help="Edit an existing collection in the database.")
+@cloup.argument("title", help="Collection's title", required=True)
+@cloup.option("-d", "--description", help="New description for the collection")
 @cloup.option("--tags", help="New tags for the collection", multiple=True)
 @click.pass_context
-def edit_collection(
-    ctx: click.Context, label: str, description: str = None, ext_uid: str = None, tags: list = None
-) -> None:
+def edit_collection(ctx: click.Context, title: str, description: str = None, tags: list = None) -> None:
     """
     Edit an existing collection in the database.
 
     Args:
         ctx: Click context object.
-        label: Label for the collection.
+        title: title for the collection.
         description: New description for the collection.
-        ext_uid: New external UID for the collection.
         tags: New tags for the collection.
     """
-    with manage_mongo(ctx):
+    with embedded_mongo(ctx):
         mongo_uri = get_mongo_uri(ctx)
 
-        collection = Dataset(uri=mongo_uri, title=label)
+        collection = DataCollection(uri=mongo_uri, title=title).map()
         if not collection:
-            print(f"Collection with label '{label}' not found.")
+            print(f"Collection with title '{title}' not found.")
             return
 
         if description is not None:
             collection.mdb_obj.description = description
-        if ext_uid is not None:
-            collection.mdb_obj.ext_uid = ext_uid
         if tags is not None:
             collection.mdb_obj.tags = tags
 
         collection.save(force_update=True)
 
-    print(f"Collection '{label}' updated successfully.")
+    print(f"Collection '{title}' updated successfully.")
 
 
 @co.command("del", aliases=["delete"], help="Delete a collection from the database.")
-@cloup.option("--label", help="Collection's label", required=True)
+@cloup.argument("title", help="Collection's title", required=True)
 @click.pass_context
-def delete_collection(ctx: click.Context, label: str) -> None:
+def delete_collection(ctx: click.Context, title: str) -> None:
     """
     Delete a collection from the database.
 
     Args:
         ctx: Click context object.
-        label: Label for the collection.
+        title: title for the collection.
     """
-    with manage_mongo(ctx):
+    with embedded_mongo(ctx):
         mongo_uri = get_mongo_uri(ctx)
 
-        with get_mec(uri=mongo_uri):
-            collection = DataCollection.objects(title=label)
+        collection = DataCollection(uri=mongo_uri, title=title).map()
 
-            if not collection:
-                print(f"Collection with label '{label}' not found.")
-                return
+        if not collection:
+            print(f"Collection with title '{title}' not found.")
+            return
 
-            collection.delete()
+        collection.delete()
 
-    print(f"Collection '{label}' deleted successfully.")
-
-
-@co.command("ls", aliases=["list"], help="List all collections in the database.")
-@click.pass_context
-def list_collections(ctx: click.Context) -> None:
-    """
-    List all collections in the database.
-
-    Args:
-        ctx: Click context object.
-    """
-    with manage_mongo(ctx):
-        mongo_uri = get_mongo_uri(ctx)
-
-        with get_mec(uri=mongo_uri):
-            collections = DataCollection.objects()
-
-            if not collections:
-                print("No collections found in the database.")
-                return
-
-            print(f"\nCollections in the database: {len(collections)}")
-            print("=" * 40)
-
-            for collection in collections:
-                print(f"\n{collection['title']} collection")
-                print("-" * len(collection["title"]))
-
-                for field_name in collection._fields.keys():
-                    if field_name not in ("title", "id"):
-                        print(f"  - {field_name}: {collection[field_name]}")
-                print(f"  - objects: {len(PosixDataObject(uri=mongo_uri).query(collections=collection))}")
+    print(f"Collection '{title}' deleted successfully.")

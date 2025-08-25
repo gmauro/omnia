@@ -3,6 +3,7 @@ import time
 from contextlib import contextmanager
 
 from omnia import logger, mongo_db_logpath, mongo_db_path
+from omnia.config.config_manager import ConfigurationManager
 
 mongo_deployment_types = ["embedded", "standalone"]
 
@@ -14,15 +15,21 @@ def get_mongo_deployment(ctx: object) -> str:
 
 
 def get_mongo_uri(ctx: object) -> str:
-    """Retrieve MongoDB URI from Vault or command line options."""
+    """Retrieve MongoDB URI from command line options."""
 
-    return ctx.obj.get("mongo").get("uri")
+    uri = ctx.obj.get("mongo").get("uri")
+
+    if not uri:
+        config = ConfigurationManager()
+        uri = config.get_mdbc_uri
+
+    return uri
 
 
 @contextmanager
-def manage_mongo(ctx):
+def embedded_mongo(ctx):
     """
-    Context manager to handle the lifecycle of MongoDB server.
+    Context manager to handle the lifecycle of the embedded MongoDB server.
 
     Args:
         ctx: The context object containing configuration details.
@@ -33,12 +40,12 @@ def manage_mongo(ctx):
     Raises:
         Exception: If an error occurs during the MongoDB server management.
     """
-    embedded_mongo = (get_mongo_deployment(ctx) == "embedded") and (
+    embedded = (get_mongo_deployment(ctx) == "embedded") and (
         (get_mongo_uri(ctx) is None) or ("localhost:27018" in get_mongo_uri(ctx))
     )
-    logger.debug(f"Embedded MongoDB: {embedded_mongo}")
+    logger.debug(f"Embedded MongoDB: {embedded}")
     mdb = MongoDBManager()
-    if embedded_mongo:
+    if embedded:
         mdb.start()
     try:
         yield
@@ -46,7 +53,7 @@ def manage_mongo(ctx):
         logger.error(f"Error occurred: {e}")
         raise
     finally:
-        if embedded_mongo:
+        if embedded:
             mdb.stop()
 
 

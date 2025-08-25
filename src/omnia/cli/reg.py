@@ -1,14 +1,12 @@
 import fnmatch
 import re
-import time
 from pathlib import Path
 
 import click
 import cloup
 
-from omnia.mongo.connection_manager import get_mec
-from omnia.mongo.models import DataCollection, Dataset, PosixDataObject
-from omnia.mongo.mongo_manager import get_mongo_uri, manage_mongo
+from omnia.mongo.models import DataCollection, PosixDataObject
+from omnia.mongo.mongo_manager import embedded_mongo, get_mongo_uri
 from omnia.utils import Hashing
 
 HELP_DOC = """
@@ -32,54 +30,37 @@ def check_file_existence(file_paths):
     return existence_check
 
 
-def get_file_paths_from_regex(regex_pattern, directory):
+def match_files(directory: Path, pattern: str) -> list[Path]:
     """
-    Get file paths from a directory that match a given regex pattern.
+    Match files using either regex or glob pattern.
 
-    Parameters:
-    regex_pattern (str): The regex pattern to match file paths.
-    directory (Path): The directory to search for files.
+    Args:
+        directory: Directory to search
+        pattern: Pattern (regex or glob)
 
     Returns:
-    list: A list of file paths that match the regex pattern.
+        List of matching file paths
     """
-    file_paths = []
-    # rglob is used to recursively search for all files in the directory and its subdirectories
-    for file_path in directory.rglob("*"):
-        if re.search(regex_pattern, file_path.name):
-            file_paths.append(file_path)
-    return file_paths
+    if validate_regex(pattern):
+        return get_file_paths_from_regex(pattern, directory)
+    elif any(c in pattern for c in ["*", "?", "[", "]"]):
+        return get_file_paths_from_glob(pattern, directory)
+    else:
+        return [Path(pattern)]
 
 
-def get_file_paths_from_glob(glob_pattern, directory):
-    """
-    Get file paths from a directory that match a given glob pattern.
-
-    Parameters:
-    glob_pattern (str): The glob pattern to match file paths.
-    directory (Path): The directory to search for files.
-
-    Returns:
-    list: A list of file paths that match the glob pattern.
-    """
-    file_paths = []
-    # rglob is used to recursively search for all files in the directory and its subdirectories
-    for file_path in directory.rglob("*"):
-        if fnmatch.fnmatch(file_path.name, glob_pattern):
-            file_paths.append(file_path)
-    return file_paths
+def get_file_paths_from_regex(pattern: str, directory: Path) -> list[Path]:
+    """Find files matching a regex pattern."""
+    return [file_path for file_path in directory.rglob("*") if re.search(pattern, file_path.name)]
 
 
-def validate_regex(pattern):
-    """
-    Validate the regex pattern.
+def get_file_paths_from_glob(pattern: str, directory: Path) -> list[Path]:
+    """Find files matching a glob pattern."""
+    return [file_path for file_path in directory.rglob("*") if fnmatch.fnmatch(file_path.name, pattern)]
 
-    Parameters:
-    pattern (str): The regex pattern to validate.
 
-    Returns:
-    bool: True if the pattern is valid, False otherwise.
-    """
+def validate_regex(pattern: str) -> bool:
+    """Validate regex pattern."""
     try:
         re.compile(pattern)
         return True
@@ -87,45 +68,33 @@ def validate_regex(pattern):
         return False
 
 
-def validate_directory(path):
-    """
-    Validate the directory path.
-
-    Parameters:
-    path (str): The directory path to validate.
-
-    Returns:
-    bool: True if the path is a valid directory, False otherwise.
-    """
-    directory = Path(path)
+def validate_directory(path: str | Path) -> bool:
+    """Validate directory path."""
+    match path:
+        case str():
+            directory = Path(path)
+        case Path():
+            directory = path
     return directory.exists() and directory.is_dir()
 
 
 @cloup.command("reg", no_args_is_help=True, help=HELP_DOC)
-@cloup.option("-c", "--collection", help="The collection's title to register files into")
+@cloup.argument("source", help="Input path")
+@cloup.argument("collection", help="The collection's title to register files into")
 @cloup.option("-k", "--skip-metadata-computation", is_flag=True, help="Skip metadata computation")
-@cloup.option("--search-path", required=True, help="The path to search for files")
-@cloup.option("--pattern", required=True, help="The pattern to match file names (regex or glob)")
+@cloup.option("-f", "--force", is_flag=True, help="Force registration without prompting")
 @click.pass_context
-def reg(ctx, collection, skip_metadata_computation, search_path, pattern):
+def reg(ctx, source, collection, skip_metadata_computation, force):  # , search_path, pattern):
     """Register files into Omnia"""
 
-    while True:
-        if validate_directory(search_path):
-            directory = Path(search_path)
-            break
-        else:
-            print("Invalid search path. Please enter a valid directory path.")
+    directory = Path(source).parent
+    file_pattern = Path(source).name
 
-    while True:
-        if validate_regex(pattern):
-            file_paths = get_file_paths_from_regex(pattern, directory)
-            break
-        elif any(c in pattern for c in ["*", "?", "[", "]"]):
-            file_paths = get_file_paths_from_glob(pattern, directory)
-            break
-        else:
-            print("Invalid pattern. Please enter a valid regex or glob pattern.")
+    if not validate_directory(directory):
+        print("Invalid search path. Please enter a valid directory path.")
+        return
+
+    file_paths = match_files(directory, file_pattern)
 
     if not file_paths:
         print("No files found matching the pattern.")
@@ -135,30 +104,47 @@ def reg(ctx, collection, skip_metadata_computation, search_path, pattern):
     existence_check = check_file_existence(file_paths)
 
     hg = Hashing()
-    compute_metadata = {"compute_metadata": not skip_metadata_computation}
+    compute_metadata = not skip_metadata_computation
 
-    with manage_mongo(ctx):
+    with embedded_mongo(ctx):
         mongo_uri = get_mongo_uri(ctx)
-        print(Dataset(uri=mongo_uri).query(title=collection))
-        with get_mec(uri=mongo_uri):
-            _collection = DataCollection.objects(title=collection).first()
+        dataset = DataCollection(uri=mongo_uri, title=collection).map()
+        # with get_mec(uri=mongo_uri):
+        #     _collection = DataCollection.objects(title=collection).first()
 
-            if not _collection:
-                print(f"Collection with title '{collection}' not found.")
-                return
+        if not dataset:
+            print(f"Collection with title '{collection}' not found.")
+            return
+        _collection = dataset.mdb_obj
 
-            # Print the results
-            for file_path, exists in existence_check.items():
-                print(f"File: {file_path} - Exists: {exists}")
+        # Print the results
+        for file_path, exists in existence_check.items():
+            if not exists:
+                print(f"File: {file_path} does not exist. Skipping ...")
+                continue
+            data_id = hg.compute_hash(fpath=file_path)
+            pdo = PosixDataObject(uri=mongo_uri, data_id=data_id).map()
+
+            if not pdo:
                 pdo_data = {
-                    "collections": [_collection],
-                    "description": "Description of the file2",
+                    "data_id": data_id,
                     "path": str(file_path),
-                    "data_id": hg.compute_hash(fpath=file_path),
+                    "collections": [_collection],
                 }
+                pdo = PosixDataObject(uri=mongo_uri, **pdo_data)
 
                 if compute_metadata:
-                    PosixDataObject(uri=mongo_uri, **pdo_data).compute().save()
+                    pdo.compute()
+                pdo.save()
+
+            else:
+                if _collection not in pdo.mdb_obj.collections:
+                    pdo.mdb_obj.collections.append(_collection)
+                    pdo.update()
+                    return
+
                 else:
-                    PosixDataObject(uri=mongo_uri, **pdo_data).save()
-        time.sleep(60)
+                    if not force:
+                        print(f"File {file_path} already registered. Use --force to overwrite.")
+                        return
+                    pdo.compute().update()

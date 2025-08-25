@@ -4,7 +4,7 @@ import click
 import cloup
 
 from omnia import __appname__, __version__, context_settings, log_file, logger
-from omnia.cli import co, info, reg
+from omnia.cli import co, info, list_metadata, reg, serve
 from omnia.config.config_manager import ConfigurationManager
 from omnia.mongo.mongo_manager import mongo_deployment_types
 
@@ -74,6 +74,8 @@ def main():
     cli.add_command(info)
     cli.add_command(co)
     cli.add_command(reg)
+    cli.add_command(serve)
+    cli.add_command(list_metadata)
     logger.remove()
     cli(obj={})
 
