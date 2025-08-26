@@ -38,26 +38,20 @@ def find_item(obj: dict, key: str) -> Any:
 
 class MongoMixin:
     def __init_subclass__(cls, **kwargs):
-        required_attrs = ["mdb_obj", "klass", "mec", "pk", "unique_key", "unique_key_dict"]
+        required_attrs = ["mdb_obj", "klass", "pk", "unique_key", "unique_key_dict"]
         missing_attrs = [attr for attr in required_attrs if not hasattr(cls, attr)]
         if missing_attrs:
             raise AttributeError(f"Class {cls.__name__} is missing required attributes: {', '.join(missing_attrs)}")
         super().__init_subclass__(**kwargs)
 
     @property
-    def is_connected(self) -> bool:
-        return self.mec is not None
-
-    @property
     def is_mapped(self) -> bool:
-        with self.mec:
-            #  len() is much slower than count()
-            count = self.klass.objects(**self.unique_key_dict).count()
-            if count == 1:
-                logger.debug(f" {count} {self.klass.__name__} found")
-                return True
+        count = self.klass.objects(**self.unique_key_dict).count()
+        if count == 1:
             logger.debug(f" {count} {self.klass.__name__} found")
-            return False
+            return True
+        logger.debug(f" {count} {self.klass.__name__} found")
+        return False
 
     def delete(self) -> None:
         """
@@ -65,9 +59,8 @@ class MongoMixin:
         This will only take effect if the document has been previously saved.
         """
         if self.is_mapped:
-            with self.mec:
-                self.mdb_obj.delete()
-                logger.info(f"{self.unique_key} deleted")
+            self.mdb_obj.delete()
+            logger.info(f"{self.unique_key} deleted")
             self.mdb_obj.id = None
 
     def map(self):
@@ -77,22 +70,21 @@ class MongoMixin:
         Returns:
             The current object if a unique match is found, otherwise None.
         """
-        with self.mec:
-            objs = self.klass.objects(**self.unique_key_dict)
-            #  len() is much slower than count()
-            count = objs.count()
-            if count == 1:
-                logger.debug(f"Mapping, {count} {self.klass.__name__} found")
+        objs = self.klass.objects(**self.unique_key_dict)
+        #  len() is much slower than count()
+        count = objs.count()
+        if count == 1:
+            logger.debug(f"Mapping, {count} {self.klass.__name__} found")
 
-                # Reload object fields from the db object
-                obj_fields = {key: getattr(objs[0], key) for key, value in self.mdb_obj._fields.items()}
+            # Reload object fields from the db object
+            obj_fields = {key: getattr(objs[0], key) for key, value in self.mdb_obj._fields.items()}
 
-                for key, value in obj_fields.items():
-                    logger.debug(f"Setting read-only field: {key}")
-                    setattr(self.mdb_obj, key, value)
+            for key, value in obj_fields.items():
+                logger.debug(f"Setting read-only field: {key}")
+                setattr(self.mdb_obj, key, value)
 
-                return self
-            return None
+            return self
+        return None
 
     def save(self, **kwargs):
         """
@@ -104,8 +96,7 @@ class MongoMixin:
         """
         force_update = kwargs.pop("force_update", False)
         try:
-            with self.mec:
-                self.mdb_obj.save(**kwargs)
+            self.mdb_obj.save(**kwargs)
             logger.info(f"{self.unique_key} saved")
         except NotUniqueError:
             if force_update:
@@ -120,9 +111,8 @@ class MongoMixin:
         """
         detail = {}
         if self.ensure_is_mapped("view"):
-            with self.mec:
-                detail = self.klass.objects(id=self.pk).as_pymongo()[0]
-                logger.debug(detail)
+            detail = self.klass.objects(id=self.pk).as_pymongo()[0]
+            logger.debug(detail)
         return detail
 
     def query(self, case_sensitive=False, **kwargs) -> list[dict]:
@@ -154,31 +144,30 @@ class MongoMixin:
             queries.append(Q(**query_fields_exact))
         logger.debug(queries)
 
-        with self.mec:
-            if len(jds.keys()) > 0:
-                for jdk, jdv in jds.items():
-                    query_fields_contains = {f"{jdk}__{contains_op}.{key}": value for key, value in jdv.items()}
+        if len(jds.keys()) > 0:
+            for jdk, jdv in jds.items():
+                query_fields_contains = {f"{jdk}__{contains_op}.{key}": value for key, value in jdv.items()}
 
-                    for key, value in query_fields_contains.items():
-                        query_field_contains = key.split(".")[0]
-                        queries.append(Q(**{query_field_contains: value}))
+                for key, value in query_fields_contains.items():
+                    query_field_contains = key.split(".")[0]
+                    queries.append(Q(**{query_field_contains: value}))
 
-                    # Use & operator to combine all the queries with AND logic
-                    # query_args = reduce(lambda x, y: x & y, queries)
-                    query_args = Q()
-                    for q in queries:
-                        query_args = query_args & q
-                    logger.debug(query_args)
-                    docs.extend(
-                        qr
-                        for qr in self.klass.objects(query_args).as_pymongo()
-                        if value.casefold() in find_item(json.loads(qr[jdk]), key.split(".").pop()).casefold()
-                    )
-            else:
-                for query_arg in queries:
-                    logger.debug(query_arg)
-                    docs.extend(qr for qr in self.klass.objects(query_arg).as_pymongo())
-            logger.debug(f"found {len(docs)} documents")
+                # Use & operator to combine all the queries with AND logic
+                # query_args = reduce(lambda x, y: x & y, queries)
+                query_args = Q()
+                for q in queries:
+                    query_args = query_args & q
+                logger.debug(query_args)
+                docs.extend(
+                    qr
+                    for qr in self.klass.objects(query_args).as_pymongo()
+                    if value.casefold() in find_item(json.loads(qr[jdk]), key.split(".").pop()).casefold()
+                )
+        else:
+            for query_arg in queries:
+                logger.debug(query_arg)
+                docs.extend(qr for qr in self.klass.objects(query_arg).as_pymongo())
+        logger.debug(f"found {len(docs)} documents")
 
         return docs
 
@@ -195,13 +184,12 @@ class MongoMixin:
             logger.debug(f"Mapping not ensured, cannot update document {self.unique_key}")
             return False
 
-        with self.mec:
-            self.mdb_obj.modification_date = datetime.datetime.now()
-            update_result = self.mdb_obj.save()
+        self.mdb_obj.modification_date = datetime.datetime.now()
+        update_result = self.mdb_obj.save()
 
-            if update_result:
-                logger.info(f"{self.unique_key} modified")
-            else:
-                logger.info(f"Failed to update document {self.unique_key}")
+        if update_result:
+            logger.info(f"{self.unique_key} modified")
+        else:
+            logger.info(f"Failed to update document {self.unique_key}")
 
-            return update_result
+        return update_result

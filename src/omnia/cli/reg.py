@@ -5,6 +5,7 @@ from pathlib import Path
 import click
 import cloup
 
+from omnia.mongo.connection_manager import get_mec
 from omnia.mongo.models import DataCollection, PosixDataObject
 from omnia.mongo.mongo_manager import embedded_mongo, get_mongo_uri
 from omnia.utils import Hashing
@@ -108,43 +109,44 @@ def reg(ctx, source, collection, skip_metadata_computation, force):  # , search_
 
     with embedded_mongo(ctx):
         mongo_uri = get_mongo_uri(ctx)
-        dataset = DataCollection(uri=mongo_uri, title=collection).map()
-        # with get_mec(uri=mongo_uri):
-        #     _collection = DataCollection.objects(title=collection).first()
+        with get_mec(uri=mongo_uri):
+            dataset = DataCollection(uri=mongo_uri, title=collection).map()
+            # with get_mec(uri=mongo_uri):
+            #     _collection = DataCollection.objects(title=collection).first()
 
-        if not dataset:
-            print(f"Collection with title '{collection}' not found.")
-            return
-        _collection = dataset.mdb_obj
+            if not dataset:
+                print(f"Collection with title '{collection}' not found.")
+                return
+            _collection = dataset.mdb_obj
 
-        # Print the results
-        for file_path, exists in existence_check.items():
-            if not exists:
-                print(f"File: {file_path} does not exist. Skipping ...")
-                continue
-            data_id = hg.compute_hash(fpath=file_path)
-            pdo = PosixDataObject(uri=mongo_uri, data_id=data_id).map()
+            # Print the results
+            for file_path, exists in existence_check.items():
+                if not exists:
+                    print(f"File: {file_path} does not exist. Skipping ...")
+                    continue
+                data_id = hg.compute_hash(fpath=file_path)
+                pdo = PosixDataObject(uri=mongo_uri, data_id=data_id).map()
 
-            if not pdo:
-                pdo_data = {
-                    "data_id": data_id,
-                    "path": str(file_path),
-                    "collections": [_collection],
-                }
-                pdo = PosixDataObject(uri=mongo_uri, **pdo_data)
+                if not pdo:
+                    pdo_data = {
+                        "data_id": data_id,
+                        "path": str(file_path),
+                        "collections": [_collection],
+                    }
+                    pdo = PosixDataObject(uri=mongo_uri, **pdo_data)
 
-                if compute_metadata:
-                    pdo.compute()
-                pdo.save()
-
-            else:
-                if _collection not in pdo.mdb_obj.collections:
-                    pdo.mdb_obj.collections.append(_collection)
-                    pdo.update()
-                    return
+                    if compute_metadata:
+                        pdo.compute()
+                    pdo.save()
 
                 else:
-                    if not force:
-                        print(f"File {file_path} already registered. Use --force to overwrite.")
+                    if _collection not in pdo.mdb_obj.collections:
+                        pdo.mdb_obj.collections.append(_collection)
+                        pdo.update()
                         return
-                    pdo.compute().update()
+
+                    else:
+                        if not force:
+                            print(f"File {file_path} already registered. Use --force to overwrite.")
+                            return
+                        pdo.compute().update()

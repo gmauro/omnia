@@ -9,7 +9,6 @@ import platform
 from mongoengine import DateTimeField, Document, IntField, ListField, ReferenceField, StringField, ValidationError
 
 from omnia import logger
-from omnia.mongo.connection_manager import get_mec
 from omnia.mongo.mixin import MongoMixin
 from omnia.utils import Hashing, get_file_size, guess_mimetype
 
@@ -67,8 +66,6 @@ class DataCollection(MongoMixin):
     def __init__(self, **kwargs):
         self.logger = logger
         self._klass = kwargs.get("klass", Dataset)
-        uri = kwargs.get("uri")
-        self._mec = get_mec(uri=uri) if uri else kwargs.get("mec", get_mec())
 
         self._obj = self._klass(
             title=kwargs.get("title"),
@@ -80,10 +77,6 @@ class DataCollection(MongoMixin):
     def klass(self) -> type:
         """Get the class of the underlying MongoDB object."""
         return self._klass
-
-    @property
-    def mec(self):
-        return self._mec
 
     @property
     def mdb_obj(self) -> Dataset:
@@ -150,14 +143,12 @@ class PosixDataObject(MongoMixin):
         """
         self.logger = logger
         self._klass = kwargs.get("klass", DataObject)
-        uri = kwargs.get("uri")
-        self._mec = get_mec(uri=uri) if uri else kwargs.get("mec", get_mec())
 
         self._obj = self._klass(
             collections=kwargs.get("collections", []),
             data_id=kwargs.get("data_id"),
             host=kwargs.get("host", platform.node()),
-            path=kwargs.get("path", None),
+            path=kwargs.get("path"),
             prefix="posix",
             checksum=None,
             file_size=None,
@@ -169,10 +160,6 @@ class PosixDataObject(MongoMixin):
     def klass(self) -> type:
         """Get the class of the underlying MongoDB object."""
         return self._klass
-
-    @property
-    def mec(self):
-        return self._mec
 
     @property
     def mdb_obj(self) -> DataObject:
