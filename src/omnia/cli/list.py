@@ -1,65 +1,98 @@
 import click
 import cloup
 
+from omnia.models.data_collection import DataCollection, Dataset
+from omnia.models.data_object import PosixDataObject
 from omnia.mongo.connection_manager import get_mec
-from omnia.mongo.models import DataCollection, Dataset, PosixDataObject
 from omnia.mongo.mongo_manager import embedded_mongo, get_mongo_uri
+from omnia.utils import Hashing
+
+
+def is_collection_or_data_object(item):
+    # Check if the item is a collection
+    collection_obj = DataCollection(title=item).map()
+    collection = collection_obj is not None
+
+    data_object = False
+    data_object_obj = []
+    if not collection:
+        # Check if the item is a data object
+        data_object_obj = PosixDataObject().query(path=item)
+        data_object = len(data_object_obj) > 0
+
+    return collection, data_object, collection_obj, data_object_obj
 
 
 @cloup.command("ls", aliases=["list"], no_args_is_help=False, help="List metadata of Data Objects, Collections.")
-@cloup.option("-c", "--collection", default=None, required=False, help="Collection's title")
-@cloup.option("-d", "--data-object-path", default=None, required=False, help="Data Object's path")
+@cloup.argument("source", default=None, required=False, help="Collection's title or Data Object's path")
 @cloup.option(
     "-l", "--full-path", is_flag=True, required=False, help="List Data Object full path. It works only for Collections."
 )
+@cloup.option(
+    "-k",
+    "--verify-checksums",
+    is_flag=True,
+    required=False,
+    help="Verify Data Object integrity. It works only for Collections.",
+)
 @click.pass_context
-def list_metadata(ctx: click.Context, collection, data_object_path, full_path) -> None:
+def list_metadata(ctx: click.Context, source, full_path, verify_checksums) -> None:
     """
     List metadata of Data Objects, Collections
 
     Args:
         ctx: Click context object.
-        collection: title for the collection.
-        data_object_path: path for the data object.
+        source: Collection's title or Data Object's path
+        verify_checksums: flag to verify checksums of Data Objects. It works only for Collections.
         full_path: flag to list full path of data objects in the collections.
     """
     with embedded_mongo(ctx):
         mongo_uri = get_mongo_uri(ctx)
 
+        hg = Hashing()
+
         with get_mec(uri=mongo_uri):
-            collections = Dataset.objects()
+            collection, data_object_path, cobj, dojs = is_collection_or_data_object(source)
+
+            if not collection and not data_object_path:
+                print(f"I couldn't find either a collection or a data object with the name '{source}'")
+
             if collection:
-                _collection = collections.filter(title=collection).first()
-                print(f"{_collection['title']} collection")
-                print("-" * len(_collection["title"]))
-                for field_name in _collection._fields.keys():
-                    if field_name not in ("title", "id"):
-                        print(f"  - {field_name}: {_collection[field_name]}")
-                print(f"  - objects: {len(PosixDataObject(uri=mongo_uri).query(collections=_collection))}")
-                if full_path:
-                    dojs = PosixDataObject(uri=mongo_uri).query(collections=_collection)
-                    for do in dojs:
-                        print(f"    - {do['path']}")
+                print(f"{cobj.desc} collection")
+                print("-" * len(cobj.desc))
+                for field_name in cobj.mdb_obj._fields.keys():
+                    if field_name not in ("title", "id", "uk"):
+                        print(f"  - {field_name}: {cobj.mdb_obj[field_name]}")
+                print(f"  - objects: {len(PosixDataObject().query(collections=cobj.mdb_obj))}")
+
+                if full_path or verify_checksums:
+                    dojs = PosixDataObject().query(collections=cobj.mdb_obj)
+                    for pdo in dojs:
+                        formatted_string = f"    - {pdo['path']}"
+                        if verify_checksums:
+                            ck = hg.compute_file_hash(pdo["path"]) == pdo["checksum"]
+                            formatted_string = f"    - {ck} {pdo['path']}"
+                        print(formatted_string)
+
                 return
             if data_object_path:
-                dojs = PosixDataObject(uri=mongo_uri).query(path=data_object_path)
-
-                if not dojs:
-                    print(f"Data object '{data_object_path}' not found.")
-                    return
                 for pdo in dojs:
+                    if verify_checksums:
+                        ck = hg.compute_file_hash(pdo["path"]) == pdo["checksum"]
+                        print(f"  - checksum verified: {ck}")
                     for field_name, field_value in pdo.items():
-                        if field_name not in ("_cls", "_id"):
+                        if field_name not in ("_cls", "_id", "uk"):
                             if field_name == "collections":
                                 collection_names = []
                                 for coll_id in field_value:
-                                    for coll in DataCollection(uri=mongo_uri).query(id=coll_id):
-                                        collection_names.append(coll["title"])
+                                    coll = DataCollection(pk=coll_id).map()
+                                    collection_names.append(coll.desc)
                                 print(f"  - {field_name}: {collection_names}")
                                 continue
                             print(f"  - {field_name}: {field_value}")
                 return
 
+            collections = Dataset.objects()
             if not collections:
                 print("No collections found in the database.")
                 return
@@ -68,4 +101,4 @@ def list_metadata(ctx: click.Context, collection, data_object_path, full_path) -
             print("=" * 40)
 
             for coll in collections:
-                print(f"- {coll['title']}")
+                print(f"- {coll.title}")

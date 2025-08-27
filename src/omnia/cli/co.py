@@ -1,7 +1,8 @@
 import click
 import cloup
 
-from omnia.mongo.models import DataCollection
+from omnia.models.data_collection import DataCollection
+from omnia.mongo.connection_manager import get_mec
 from omnia.mongo.mongo_manager import embedded_mongo, get_mongo_uri
 
 HELP_DOC = "Manage collections in the database."
@@ -11,6 +12,32 @@ HELP_DOC = "Manage collections in the database."
 def co():
     """Manage collections in the database."""
     pass
+
+
+@co.command("mv", no_args_is_help=True, help="Rename a collection in the database.")
+@cloup.argument("title", help="Collection's old title", required=True)
+@cloup.argument("new-title", help="Collection's new title", required=True)
+@click.pass_context
+def rename_collection(ctx: click.Context, title: str, new_title: str) -> None:
+    """
+    Rename a collection in the database.
+    :param ctx:
+    :param title:
+    :param new_title:
+    :return:
+    """
+    with embedded_mongo(ctx):
+        mongo_uri = get_mongo_uri(ctx)
+
+        with get_mec(uri=mongo_uri):
+            collection = DataCollection(title=title).map()
+            if not collection:
+                print(f"Collection with title '{title}' not found.")
+                return
+
+            collection.mdb_obj.title = new_title
+            collection.update()
+            print(f"Collection '{title}' renamed to '{new_title}'.")
 
 
 @co.command("add", no_args_is_help=True, help="Add a new collection to the database.")
@@ -38,8 +65,9 @@ def add_collection(ctx: click.Context, title: str, description: str = None, tags
             "tags": tags,
         }
 
-        collection = DataCollection(uri=mongo_uri, **collection_data)
-        collection.save()
+        with get_mec(uri=mongo_uri):
+            collection = DataCollection(uri=mongo_uri, **collection_data)
+            collection.save()
 
     # Print the title as the main title
     print(f"\n{'=' * 40}")
@@ -70,19 +98,26 @@ def edit_collection(ctx: click.Context, title: str, description: str = None, tag
     with embedded_mongo(ctx):
         mongo_uri = get_mongo_uri(ctx)
 
-        collection = DataCollection(uri=mongo_uri, title=title).map()
-        if not collection:
-            print(f"Collection with title '{title}' not found.")
-            return
+        with get_mec(uri=mongo_uri):
+            collection = DataCollection(uri=mongo_uri, title=title).map()
+            if not collection:
+                print(f"Collection '{title}' not found.")
+                return
 
-        if description is not None:
-            collection.mdb_obj.description = description
-        if tags is not None:
-            collection.mdb_obj.tags = tags
+            touched = False
+            if description is not None:
+                touched = True
+                collection.mdb_obj.description = description
+            if len(tags) > 0:
+                touched = True
+                collection.mdb_obj.tags = tags
 
-        collection.save(force_update=True)
+            if not touched:
+                print(f"Collection '{title}' unchanged. No changes made.")
+                return
 
-    print(f"Collection '{title}' updated successfully.")
+            collection.update()
+            print(f"Collection '{title}' updated successfully.")
 
 
 @co.command("del", aliases=["delete"], help="Delete a collection from the database.")
@@ -99,12 +134,13 @@ def delete_collection(ctx: click.Context, title: str) -> None:
     with embedded_mongo(ctx):
         mongo_uri = get_mongo_uri(ctx)
 
-        collection = DataCollection(uri=mongo_uri, title=title).map()
+        with get_mec(uri=mongo_uri):
+            collection = DataCollection(uri=mongo_uri, title=title).map()
 
-        if not collection:
-            print(f"Collection with title '{title}' not found.")
-            return
+            if not collection:
+                print(f"Collection with title '{title}' not found.")
+                return
 
-        collection.delete()
+            collection.delete()
 
     print(f"Collection '{title}' deleted successfully.")

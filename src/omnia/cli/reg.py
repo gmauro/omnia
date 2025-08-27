@@ -5,10 +5,10 @@ from pathlib import Path
 import click
 import cloup
 
+from omnia.models.data_collection import DataCollection
+from omnia.models.data_object import PosixDataObject
 from omnia.mongo.connection_manager import get_mec
-from omnia.mongo.models import DataCollection, PosixDataObject
 from omnia.mongo.mongo_manager import embedded_mongo, get_mongo_uri
-from omnia.utils import Hashing
 
 HELP_DOC = """
 Register files into Omnia, from a Posix filesystem.
@@ -104,13 +104,14 @@ def reg(ctx, source, collection, skip_metadata_computation, force):  # , search_
         # Check if the found files exist
     existence_check = check_file_existence(file_paths)
 
-    hg = Hashing()
+    # hg = Hashing()
     compute_metadata = not skip_metadata_computation
 
     with embedded_mongo(ctx):
         mongo_uri = get_mongo_uri(ctx)
         with get_mec(uri=mongo_uri):
-            dataset = DataCollection(uri=mongo_uri, title=collection).map()
+            # print(DataCollection(title=collection).pk)
+            dataset = DataCollection(title=collection).map()
             # with get_mec(uri=mongo_uri):
             #     _collection = DataCollection.objects(title=collection).first()
 
@@ -124,12 +125,11 @@ def reg(ctx, source, collection, skip_metadata_computation, force):  # , search_
                 if not exists:
                     print(f"File: {file_path} does not exist. Skipping ...")
                     continue
-                data_id = hg.compute_hash(fpath=file_path)
-                pdo = PosixDataObject(uri=mongo_uri, data_id=data_id).map()
+                # data_id = hg.compute_hash(fpath=file_path)
+                pdo = PosixDataObject(path=file_path).map()
 
                 if not pdo:
                     pdo_data = {
-                        "data_id": data_id,
                         "path": str(file_path),
                         "collections": [_collection],
                     }

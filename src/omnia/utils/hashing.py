@@ -14,13 +14,10 @@ class Hashing:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self, algorithm: str = HASH_ALGORITHM, length: int = HASH_LENGTH):
+    def __init__(self, algorithm: str = HASH_ALGORITHM, bufsize: int = DEFAULT_BUFSIZE, length: int = HASH_LENGTH):
         self.algorithm = algorithm
+        self.bufsize = bufsize
         self.length = length
-
-    @property
-    def hash_length(self):
-        return self.length
 
     def compute_hash(self, fpath: str | pathlib.Path = None, st: str = None) -> str | None:
         """
@@ -60,7 +57,7 @@ class Hashing:
 
         return hash_value if self.length is None else hash_value[: self.length] if hash_value else None
 
-    def compute_file_hash(self, path: str | pathlib.Path, bufsize: int = DEFAULT_BUFSIZE) -> str:
+    def compute_file_hash(self, path: str | pathlib.Path) -> str:
         """
         Computes the hash of a file using the algorithm function
 
@@ -73,10 +70,10 @@ class Hashing:
         """
         digest = hashlib.new(self.algorithm)
         with open(path, "rb") as fp:
-            s = fp.read(bufsize)
+            s = fp.read(self.bufsize)
             while s:
                 digest.update(s)
-                s = fp.read(bufsize)
+                s = fp.read(self.bufsize)
         return digest.hexdigest()
 
     def compute_string_hash(self, st: str) -> str:

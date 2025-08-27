@@ -1,4 +1,3 @@
-import datetime
 import json
 from typing import Any
 
@@ -38,7 +37,7 @@ def find_item(obj: dict, key: str) -> Any:
 
 class MongoMixin:
     def __init_subclass__(cls, **kwargs):
-        required_attrs = ["mdb_obj", "klass", "pk", "unique_key", "unique_key_dict"]
+        required_attrs = ["mdb_obj", "klass", "pk", "unique_key", "desc"]
         missing_attrs = [attr for attr in required_attrs if not hasattr(cls, attr)]
         if missing_attrs:
             raise AttributeError(f"Class {cls.__name__} is missing required attributes: {', '.join(missing_attrs)}")
@@ -46,7 +45,7 @@ class MongoMixin:
 
     @property
     def is_mapped(self) -> bool:
-        count = self.klass.objects(**self.unique_key_dict).count()
+        count = self.klass.objects(**self.unique_key).count()
         if count == 1:
             logger.debug(f" {count} {self.klass.__name__} found")
             return True
@@ -60,7 +59,7 @@ class MongoMixin:
         """
         if self.is_mapped:
             self.mdb_obj.delete()
-            logger.info(f"{self.unique_key} deleted")
+            logger.info(f"{self.desc} deleted")
             self.mdb_obj.id = None
 
     def map(self):
@@ -70,7 +69,10 @@ class MongoMixin:
         Returns:
             The current object if a unique match is found, otherwise None.
         """
-        objs = self.klass.objects(**self.unique_key_dict)
+        if all(self.pk.values()):
+            objs = self.klass.objects(**self.pk)
+        else:
+            objs = self.klass.objects(**self.unique_key)
         #  len() is much slower than count()
         count = objs.count()
         if count == 1:
@@ -80,7 +82,7 @@ class MongoMixin:
             obj_fields = {key: getattr(objs[0], key) for key, value in self.mdb_obj._fields.items()}
 
             for key, value in obj_fields.items():
-                logger.debug(f"Setting read-only field: {key}")
+                logger.debug(f"Setting field: {key}")
                 setattr(self.mdb_obj, key, value)
 
             return self
@@ -97,13 +99,13 @@ class MongoMixin:
         force_update = kwargs.pop("force_update", False)
         try:
             self.mdb_obj.save(**kwargs)
-            logger.info(f"{self.unique_key} saved")
+            logger.info(f"{self.desc} saved")
         except NotUniqueError:
             if force_update:
                 if self.update():
-                    logger.warning(f"{self.unique_key} updated, as it was not a unique ID")
+                    logger.warning(f"{self.desc} updated, as it was not a unique ID")
             else:
-                logger.error(f"{self.unique_key} already exists. Did you mean to edit it?")
+                logger.error(f"{self.desc} already exists. Did you mean to edit it?")
 
     def view(self) -> dict:
         """
@@ -181,15 +183,16 @@ class MongoMixin:
                   in the database doesn't match the query or if mapping is not ensured.
         """
         if not self.is_mapped:
-            logger.debug(f"Mapping not ensured, cannot update document {self.unique_key}")
+            logger.debug(f"Mapping not ensured, cannot update document {self.desc}")
             return False
 
-        self.mdb_obj.modification_date = datetime.datetime.now()
+        self.make_unique_key()
+        self.set_modification_date()
         update_result = self.mdb_obj.save()
 
         if update_result:
-            logger.info(f"{self.unique_key} modified")
+            logger.info(f"{self.desc} modified")
         else:
-            logger.info(f"Failed to update document {self.unique_key}")
+            logger.info(f"Failed to update document {self.desc}")
 
         return update_result
