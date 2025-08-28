@@ -11,7 +11,7 @@ from omnia.mongo.connection_manager import get_mec
 from omnia.mongo.mongo_manager import embedded_mongo, get_mongo_uri
 
 HELP_DOC = """
-Register files into Omnia, from a Posix filesystem.
+Register files to a Omnia collection.
 """
 
 

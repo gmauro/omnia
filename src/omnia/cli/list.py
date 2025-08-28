@@ -9,18 +9,20 @@ from omnia.utils import Hashing
 
 
 def is_collection_or_data_object(item):
-    # Check if the item is a collection
-    collection_obj = DataCollection(title=item).map()
-    collection = collection_obj is not None
+    if item:
+        # Check if the item is a collection
+        collection_obj = DataCollection(title=item).map()
+        collection = collection_obj is not None
 
-    data_object = False
-    data_object_obj = []
-    if not collection:
-        # Check if the item is a data object
-        data_object_obj = PosixDataObject().query(path=item)
-        data_object = len(data_object_obj) > 0
+        data_object = False
+        data_object_obj = []
+        if not collection:
+            # Check if the item is a data object
+            data_object_obj = PosixDataObject().query(path=item)
+            data_object = len(data_object_obj) > 0
 
-    return collection, data_object, collection_obj, data_object_obj
+        return collection, data_object, collection_obj, data_object_obj
+    return False, False, None, []
 
 
 @cloup.command("ls", aliases=["list"], no_args_is_help=False, help="List metadata of Data Objects, Collections.")
@@ -54,7 +56,7 @@ def list_metadata(ctx: click.Context, source, full_path, verify_checksums) -> No
         with get_mec(uri=mongo_uri):
             collection, data_object_path, cobj, dojs = is_collection_or_data_object(source)
 
-            if not collection and not data_object_path:
+            if not collection and not data_object_path and source:
                 print(f"I couldn't find either a collection or a data object with the name '{source}'")
 
             if collection:
