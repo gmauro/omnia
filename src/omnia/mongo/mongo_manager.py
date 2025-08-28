@@ -114,7 +114,7 @@ class MongoDBManager:
                     # If mongostat returns output containing stats, server is up
                     if result.returncode == 0 and "insert" in result.stdout:
                         logger.info(
-                            f"MongoDB server on {self.host}:{self.port} is running and ready to accept connections."
+                            f"Embedded MongoDB server running on {self.host}:{self.port} (Press CTRL+C to quit)"
                         )
                         break
                 except subprocess.TimeoutExpired:
