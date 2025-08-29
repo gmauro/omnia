@@ -17,6 +17,7 @@ class Dataset(Document):
     creation_date = DateTimeField(default=datetime.datetime.now())
     modification_date = DateTimeField()
     tags = ListField(StringField(max_length=50))
+    notes = JSONField()
 
     @classmethod
     def json_dict_fields(cls) -> tuple:

@@ -1,3 +1,5 @@
+import json
+
 import click
 import cloup
 
@@ -13,8 +15,11 @@ HELP_DOC = "Manage collections in the database."
 @cloup.argument("new-title", help="Collection's new title", required=False)
 @cloup.option("-d", "--description", help="New description for the collection")
 @cloup.option("--tags", help="New tags for the collection", multiple=True)
+@cloup.option("--notes", help="New notes for the collection")
 @click.pass_context
-def edit_collection(ctx: click.Context, title: str, new_title: str, description: str, tags: list[str]) -> None:
+def edit_collection(
+    ctx: click.Context, title: str, new_title: str, description: str, tags: list[str], notes: str
+) -> None:
     """
     Edit collection's details in the database.
     """
@@ -34,11 +39,21 @@ def edit_collection(ctx: click.Context, title: str, new_title: str, description:
 
             touched = False
             if description is not None:
-                touched = True
                 collection.mdb_obj.description = description
-            if len(tags) > 0:
                 touched = True
+            if len(tags) > 0:
                 collection.mdb_obj.tags = tags
+                touched = True
+            if notes is not None:
+                try:
+                    json.loads(notes)
+                    collection.mdb_obj.notes = notes
+                    touched = True
+                except json.JSONDecodeError:
+                    print(
+                        'Invalid JSON format for notes. It should be like this: \'{"key": "value"}\'. '
+                        "Notes not updated."
+                    )
 
             if not touched:
                 print(f"Collection '{collection.desc}' unchanged. No changes made.")

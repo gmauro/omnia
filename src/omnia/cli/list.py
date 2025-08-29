@@ -1,3 +1,5 @@
+import json
+
 import click
 import cloup
 
@@ -62,9 +64,15 @@ def list_metadata(ctx: click.Context, source, full_path, verify_checksums) -> No
             if collection:
                 print(f"{cobj.desc} collection")
                 print("-" * len(cobj.desc))
+
                 for field_name in cobj.mdb_obj._fields.keys():
-                    if field_name not in ("title", "id", "uk"):
+                    if field_name not in ("title", "id", "uk", "notes"):
                         print(f"  - {field_name}: {cobj.mdb_obj[field_name]}")
+                    if field_name in Dataset.json_dict_fields():
+                        print(f"  - {field_name}:")
+                        field_value = json.loads(cobj.mdb_obj[field_name])
+                        for subk, v in field_value.items():
+                            print(f"      - {subk}: {v}")
                 print(f"  - objects: {len(PosixDataObject().query(collections=cobj.mdb_obj))}")
 
                 if full_path or verify_checksums:
@@ -75,8 +83,8 @@ def list_metadata(ctx: click.Context, source, full_path, verify_checksums) -> No
                             ck = hg.compute_file_hash(pdo["path"]) == pdo["checksum"]
                             formatted_string = f"    - {ck} {pdo['path']}"
                         print(formatted_string)
-
                 return
+
             if data_object_path:
                 for pdo in dojs:
                     if verify_checksums:
