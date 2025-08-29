@@ -99,55 +99,8 @@ def add_collection(ctx: click.Context, title: str, description: str = None, tags
 
     # Print the other fields in a list format
     for field_name in collection.mdb_obj._fields.keys():
-        if field_name not in ("title", "id"):  # Skip the title as it's already printed
+        if field_name not in ("title", "id", "uk"):  # Skip the title as it's already printed
             print(f"  - {field_name}: {collection.mdb_obj[field_name]}")
-
-
-# @cloup.group("co", no_args_is_help=True, help=HELP_DOC)
-# def co():
-#     """Manage collections in the database."""
-#     pass
-#
-#
-# @cloup.command("ed", aliases=["edit"], no_args_is_help=True, help="Edit an existing collection in the database.")
-# @cloup.argument("title", help="Collection's title", required=True)
-# @cloup.option("-d", "--description", help="New description for the collection")
-# @cloup.option("--tags", help="New tags for the collection", multiple=True)
-# @click.pass_context
-# def edit_collection(ctx: click.Context, title: str, description: str = None, tags: list = None) -> None:
-#     """
-#     Edit an existing collection in the database.
-#
-#     Args:
-#         ctx: Click context object.
-#         title: title for the collection.
-#         description: New description for the collection.
-#         tags: New tags for the collection.
-#     """
-#     with embedded_mongo(ctx):
-#         mongo_uri = get_mongo_uri(ctx)
-#
-#         with get_mec(uri=mongo_uri):
-#             collection = DataCollection(uri=mongo_uri, title=title).map()
-#             if not collection:
-#                 print(f"Collection '{title}' not found.")
-#                 return
-#
-#             touched = False
-#             if description is not None:
-#                 touched = True
-#                 collection.mdb_obj.description = description
-#             if len(tags) > 0:
-#                 touched = True
-#                 collection.mdb_obj.tags = tags
-#
-#             if not touched:
-#                 print(f"Collection '{title}' unchanged. No changes made.")
-#                 return
-#
-#             collection.update()
-#             print(f"Collection '{title}' updated successfully.")
-#
 
 
 @cloup.command("rmcoll", aliases=["rmdir"], help="Delete a collection from the database.")

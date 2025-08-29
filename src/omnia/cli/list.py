@@ -66,13 +66,17 @@ def list_metadata(ctx: click.Context, source, full_path, verify_checksums) -> No
                 print("-" * len(cobj.desc))
 
                 for field_name in cobj.mdb_obj._fields.keys():
+                    field_value = cobj.mdb_obj[field_name]
                     if field_name not in ("title", "id", "uk", "notes"):
-                        print(f"  - {field_name}: {cobj.mdb_obj[field_name]}")
+                        print(f"  - {field_name}: {field_value}")
                     if field_name in Dataset.json_dict_fields():
-                        print(f"  - {field_name}:")
-                        field_value = json.loads(cobj.mdb_obj[field_name])
-                        for subk, v in field_value.items():
-                            print(f"      - {subk}: {v}")
+                        if field_value:
+                            print(f"  - {field_name}:")
+                            field_value = json.loads(field_value)
+                            for subk, v in field_value.items():
+                                print(f"      - {subk}: {v}")
+                            continue
+                        print(f"  - {field_name}: {field_value}")
                 print(f"  - objects: {len(PosixDataObject().query(collections=cobj.mdb_obj))}")
 
                 if full_path or verify_checksums:
