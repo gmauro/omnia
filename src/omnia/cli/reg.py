@@ -27,7 +27,7 @@ def check_file_existence(file_paths):
     """
     existence_check = {}
     for file_path in file_paths:
-        existence_check[file_path] = file_path.exists()
+        existence_check[file_path] = file_path.exists() and file_path.is_file()
     return existence_check
 
 
@@ -85,7 +85,7 @@ def validate_directory(path: str | Path) -> bool:
 @cloup.option("-k", "--skip-metadata-computation", is_flag=True, help="Skip metadata computation")
 @cloup.option("-f", "--force", is_flag=True, help="Force registration without prompting")
 @click.pass_context
-def reg(ctx, source, collection, skip_metadata_computation, force):  # , search_path, pattern):
+def reg(ctx, source, collection, skip_metadata_computation, force):
     """Register files into Omnia"""
 
     directory = Path(source).parent
@@ -104,16 +104,12 @@ def reg(ctx, source, collection, skip_metadata_computation, force):  # , search_
         # Check if the found files exist
     existence_check = check_file_existence(file_paths)
 
-    # hg = Hashing()
     compute_metadata = not skip_metadata_computation
 
     with embedded_mongo(ctx):
         mongo_uri = get_mongo_uri(ctx)
         with get_mec(uri=mongo_uri):
-            # print(DataCollection(title=collection).pk)
             dataset = DataCollection(title=collection).map()
-            # with get_mec(uri=mongo_uri):
-            #     _collection = DataCollection.objects(title=collection).first()
 
             if not dataset:
                 print(f"Collection with title '{collection}' not found.")
@@ -125,7 +121,7 @@ def reg(ctx, source, collection, skip_metadata_computation, force):  # , search_
                 if not exists:
                     print(f"File: {file_path} does not exist. Skipping ...")
                     continue
-                # data_id = hg.compute_hash(fpath=file_path)
+
                 pdo = PosixDataObject(path=file_path).map()
 
                 if not pdo:
@@ -143,7 +139,7 @@ def reg(ctx, source, collection, skip_metadata_computation, force):  # , search_
                     if _collection not in pdo.mdb_obj.collections:
                         pdo.mdb_obj.collections.append(_collection)
                         pdo.update()
-                        return
+                        continue
 
                     else:
                         if not force:
