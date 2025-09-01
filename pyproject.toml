@@ -1,6 +1,6 @@
 [project]
 name = "omnia"
-version = "0.4.0"
+version = "0.4.1"
 description = "Omnia Data Catalogue: Provides a searchable inventory of data assets, enriched with both system and user-defined metadata."
 authors = [{ name = "Gianmauro Cuccuru", email = "gmauro@gmail.com"}]
 readme = "README.md"
