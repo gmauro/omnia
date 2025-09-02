@@ -4,7 +4,16 @@ import click
 import cloup
 
 from omnia import __appname__, __version__, context_settings, log_file, logger
-from omnia.cli import add_collection, delete_collection, edit_collection, info, list_metadata, reg, serve
+from omnia.cli import (
+    add_collection,
+    dataset_registration,
+    dataset_retrieval,
+    delete_collection,
+    edit_collection,
+    info,
+    list_metadata,
+    serve,
+)
 from omnia.config.config_manager import ConfigurationManager
 from omnia.mongo.mongo_manager import mongo_deployment_types
 
@@ -74,17 +83,10 @@ def cli(ctx, verbosity, stdout, configuration_file, mongo_uri, mongo_deployment)
 
 def main():
     cli.section("Collections", add_collection, edit_collection, delete_collection)
-    cli.section("Data obiects", reg)
+    cli.section("Datasets", dataset_retrieval, dataset_registration)
     cli.section("Metadata", list_metadata)
     cli.add_command(info)
-    # cli.add_command(co)
-    # cli.add_command(add_collection)
-    # cli.add_command(rename_collection)
-    # cli.add_command(edit_collection)
-    # cli. add_command(delete_collection)
-    # cli.add_command(reg)
     cli.add_command(serve)
-    # cli.add_command(list_metadata)
     logger.remove()
     cli(obj={})
 
