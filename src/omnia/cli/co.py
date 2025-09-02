@@ -11,14 +11,14 @@ HELP_DOC = "Manage collections in the database."
 
 
 @cloup.command("edit", aliases=["mv"], no_args_is_help=True, help="Edit a collection in the database.")
-@cloup.argument("title", help="Collection's current title", required=True)
-@cloup.argument("new-title", help="Collection's new title", required=False)
+@cloup.argument("name", help="Collection's current name", required=True)
+@cloup.argument("new-name", help="Collection's new name", required=False)
 @cloup.option("-d", "--description", help="New description for the collection")
-@cloup.option("--tags", help="New tags for the collection", multiple=True)
+@cloup.option("--keywords", help="New keywords for the collection", multiple=True)
 @cloup.option("--notes", help="New notes for the collection")
 @click.pass_context
 def edit_collection(
-    ctx: click.Context, title: str, new_title: str, description: str, tags: list[str], notes: str
+    ctx: click.Context, name: str, new_name: str, description: str, keywords: list[str], notes: str
 ) -> None:
     """
     Edit collection's details in the database.
@@ -27,22 +27,22 @@ def edit_collection(
         mongo_uri = get_mongo_uri(ctx)
 
         with get_mec(uri=mongo_uri):
-            collection = DataCollection(title=title).map()
+            collection = DataCollection(name=name).map()
             if not collection:
-                print(f"Collection '{title}' not found.")
+                print(f"Collection '{name}' not found.")
                 return
 
-            if new_title:
-                collection.mdb_obj.title = new_title
+            if new_name:
+                collection.mdb_obj.title = new_name
                 collection.update()
-                print(f"Collection '{title}' renamed to '{new_title}'.")
+                print(f"Collection '{name}' renamed to '{new_name}'.")
 
             touched = False
             if description is not None:
                 collection.mdb_obj.description = description
                 touched = True
-            if len(tags) > 0:
-                collection.mdb_obj.tags = tags
+            if len(keywords) > 0:
+                collection.mdb_obj.keywords = keywords
                 touched = True
             if notes is not None:
                 try:
@@ -64,18 +64,18 @@ def edit_collection(
 
 
 @cloup.command("mkcoll", aliases=["mkdir"], no_args_is_help=True, help="Create a new collection in the database.")
-@cloup.argument("title", help="Collection's title", required=True)
+@cloup.argument("name", help="Collection's name", required=True)
 @cloup.option("--description", help="Collection's description")
 @cloup.option("--tags", help="Collection's tags", multiple=True)
 @click.pass_context
-def add_collection(ctx: click.Context, title: str, description: str = None, tags: list = None) -> None:
+def add_collection(ctx: click.Context, name: str, description: str = None, tags: list = None) -> None:
     """
     Add a collection to the database if it doesn't exist.
     If it exists, display its details.
 
     Args:
         ctx: Click context object.
-        title: title for the collection.
+        name: name for the collection.
         description: Description for the collection.
         tags: Tags for the collection.
     """
@@ -83,7 +83,7 @@ def add_collection(ctx: click.Context, title: str, description: str = None, tags
         mongo_uri = get_mongo_uri(ctx)
 
         collection_data = {
-            "title": title,
+            "name": name,
             "description": description,
             "tags": tags,
         }
@@ -92,38 +92,38 @@ def add_collection(ctx: click.Context, title: str, description: str = None, tags
             collection = DataCollection(uri=mongo_uri, **collection_data)
             collection.save()
 
-    # Print the title as the main title
+    # Print the name as the main title
     print(f"\n{'=' * 40}")
-    print(f"{collection.mdb_obj['title']} collection")
+    print(f"{collection.mdb_obj.name} collection")
     print(f"{'=' * 40}")
 
     # Print the other fields in a list format
     for field_name in collection.mdb_obj._fields.keys():
-        if field_name not in ("title", "id", "uk"):  # Skip the title as it's already printed
+        if field_name not in ("name", "id", "uk"):  # Skip the name as it's already printed
             print(f"  - {field_name}: {collection.mdb_obj[field_name]}")
 
 
 @cloup.command("rmcoll", aliases=["rmdir"], help="Delete a collection from the database.")
-@cloup.argument("title", help="Collection's title", required=True)
+@cloup.argument("name", help="Collection's name", required=True)
 @click.pass_context
-def delete_collection(ctx: click.Context, title: str) -> None:
+def delete_collection(ctx: click.Context, name: str) -> None:
     """
     Delete a collection from the database.
 
     Args:
         ctx: Click context object.
-        title: title for the collection.
+        name: name for the collection.
     """
     with embedded_mongo(ctx):
         mongo_uri = get_mongo_uri(ctx)
 
         with get_mec(uri=mongo_uri):
-            collection = DataCollection(uri=mongo_uri, title=title).map()
+            collection = DataCollection(uri=mongo_uri, name=name).map()
 
             if not collection:
-                print(f"Collection with title '{title}' not found.")
+                print(f"Collection with name '{name}' not found.")
                 return
 
             collection.delete()
 
-    print(f"Collection '{title}' deleted successfully.")
+    print(f"Collection '{name}' deleted successfully.")

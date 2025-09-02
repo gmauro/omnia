@@ -1,6 +1,14 @@
 import datetime
 
-from mongoengine import DateTimeField, Document, ListField, StringField
+from mongoengine import (
+    DateTimeField,
+    Document,
+    EmbeddedDocument,
+    EmbeddedDocumentField,
+    ListField,
+    StringField,
+    URLField,
+)
 
 from omnia import logger
 from omnia.models.commons import JSONField
@@ -8,16 +16,54 @@ from omnia.mongo.mixin import MongoMixin
 from omnia.utils import Hashing
 
 
-class Dataset(Document):
-    """Base class for a set of data objects."""
+class Provider(EmbeddedDocument):
+    """Embedded document for the provider of the datacatalog."""
 
-    uk = StringField(max_length=200, sparse=True, required=True, unique=True)
-    title = StringField(max_length=200, sparse=True, required=True, unique_with=["uk"])
+    type = StringField(default="Organization", required=True)
+    name = StringField(required=True)
+    url = URLField()
+
+
+class Datacatalog(Document):
+    """MongoEngine model for a BioSchemas Datacatalog.
+
+    Attributes:
+        context (StringField): JSON-LD context
+        type (StringField): Schema.org/Bioschemas class for the resource
+        uk (StringField): Unique identifier for the catalog (max 200 chars)
+        name (StringField): Unique name of the catalog (max 200 chars)
+        description (StringField): Description of the catalog (max 200 chars)
+        date_created (DateTimeField): Creation date, defaults to current datetime
+        date_modified (DateTimeField): Last modification date
+        keywords (ListField): List of keywords describing the catalog delimited by commas.
+        notes (JSONField): Additional notes or metadata
+        provider (EmbeddedDocumentField): Contact information about the catalog provider
+
+    """
+
+    # JSON-LD context and type
+    context = StringField(default="https://schema.org/", required=True)
+    type = StringField(default="Datacatalog", required=True)
+
+    # Datacatalog fields
+    uk = StringField(max_length=100, required=True, unique=True)
+    name = StringField(max_length=200, required=True, unique=True)
     description = StringField(max_length=200)
-    creation_date = DateTimeField(default=datetime.datetime.now())
-    modification_date = DateTimeField()
-    tags = ListField(StringField(max_length=50))
+    date_created = DateTimeField(default=datetime.datetime.now())
+    date_modified = DateTimeField()
+    keywords = ListField(StringField(max_length=100))
     notes = JSONField()
+
+    # Nested documents
+    provider = EmbeddedDocumentField(Provider)
+
+    meta = {
+        "collection": "data_catalogs",
+        "indexes": [
+            "name",
+            "keywords",
+        ],
+    }
 
     @classmethod
     def json_dict_fields(cls) -> tuple:
@@ -37,13 +83,13 @@ class DataCollection(MongoMixin):
 
     def __init__(self, **kwargs):
         self.logger = logger
-        self._klass = kwargs.get("klass", Dataset)
+        self._klass = kwargs.get("klass", Datacatalog)
 
         self._obj = self._klass(
             pk=kwargs.get("pk"),
-            title=kwargs.get("title"),
+            name=kwargs.get("name"),
             description=kwargs.get("description", None),
-            tags=kwargs.get("tags", []),
+            keywords=kwargs.get("keywords", []),
         )
 
         self.make_unique_key()
@@ -51,7 +97,7 @@ class DataCollection(MongoMixin):
     @property
     def desc(self) -> str:
         """Get object descriptor"""
-        return f"{self.mdb_obj.title}"
+        return f"{self.mdb_obj.name}"
 
     @property
     def klass(self) -> type:
@@ -59,14 +105,14 @@ class DataCollection(MongoMixin):
         return self._klass
 
     @property
-    def mdb_obj(self) -> Dataset:
+    def mdb_obj(self) -> Datacatalog:
         """Get the underlying MongoDB object."""
         return self._obj
 
     @property
     def pk(self) -> dict:
         """
-        the primary key of the object known by MongoDB (a.k.a _id)
+        the primary key of the object known by MongoDB (a.k.a. _id)
         """
         return {"pk": self.mdb_obj.pk}
 
@@ -77,10 +123,10 @@ class DataCollection(MongoMixin):
 
     def make_unique_key(self) -> None:
         """Generate a unique key for the object"""
-        if self.mdb_obj.title:
+        if self.mdb_obj.name:
             hg = Hashing()
-            self.mdb_obj.uk = hg.compute_string_hash(self.mdb_obj.title)
+            self.mdb_obj.uk = hg.compute_string_hash(self.mdb_obj.name)
 
     def set_modification_date(self) -> None:
-        """Set the modification_date of the underlying MongoDB object"""
-        self.mdb_obj.modification_date = datetime.datetime.now()
+        """Set the modification date of the underlying MongoDB object"""
+        self.mdb_obj.date_modified = datetime.datetime.now()

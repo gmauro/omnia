@@ -34,11 +34,11 @@ def match_files(search_path: str) -> list[str]:
 
 @cloup.command("reg", no_args_is_help=True, help=HELP_DOC)
 @cloup.argument("source", help="Input path")
-@cloup.argument("collection", help="The collection's title to register files into")
+@cloup.argument("collection-name", help="The collection's name to register files into")
 @cloup.option("-k", "--skip-metadata-computation", is_flag=True, help="Skip metadata computation")
 @cloup.option("-f", "--force", is_flag=True, help="Force registration without prompting")
 @click.pass_context
-def reg(ctx, source, collection, skip_metadata_computation, force):
+def reg(ctx, source, collection_name, skip_metadata_computation, force):
     """Register files into Omnia"""
 
     file_paths = match_files(source)
@@ -52,10 +52,10 @@ def reg(ctx, source, collection, skip_metadata_computation, force):
     with embedded_mongo(ctx):
         mongo_uri = get_mongo_uri(ctx)
         with get_mec(uri=mongo_uri):
-            dataset = DataCollection(title=collection).map()
+            dataset = DataCollection(name=collection_name).map()
 
             if not dataset:
-                print(f"Collection with title '{collection}' not found.")
+                print(f"Collection with name '{collection_name}' not found.")
                 return
             _collection = dataset.mdb_obj
 
@@ -75,8 +75,8 @@ def reg(ctx, source, collection, skip_metadata_computation, force):
                     pdo.save()
 
                 else:
-                    if _collection not in pdo.mdb_obj.collections:
-                        pdo.mdb_obj.collections.append(_collection)
+                    if _collection not in pdo.mdb_obj.included_in_datacatalog:
+                        pdo.mdb_obj.included_in_datacatalog.append(_collection)
                         pdo.update()
                         continue
 

@@ -4,26 +4,43 @@ import platform
 from mongoengine import DateTimeField, Document, IntField, ListField, ReferenceField, StringField
 
 from omnia import logger
-from omnia.models.commons import PREFIXES, JSONField
-from omnia.models.data_collection import Dataset
+from omnia.models.commons import PROTOCOLS, JSONField
+from omnia.models.data_collection import Datacatalog
 from omnia.mongo.mixin import MongoMixin
 from omnia.utils import Hashing, get_file_size, guess_mimetype
 
 
-class DataObject(Document):
-    """Base class for data objects."""
+class Dataset(Document):
+    """MongoEngine model for a BioSchemas Dataset
 
-    uk = StringField(max_length=25, sparse=True, required=True, unique=True)
+    Attributes:
+        uk (StringField): Unique identifier for the dataset.
+        checksum (StringField): Checksum value for the dataset.
+        included_in_datacatalog (ListField): List of references to Datacatalog documents.
+        date_created (DateTimeField): Date and time when the dataset was created.
+        size (IntField): Size of the dataset in bytes.
+        host (StringField): Host where the dataset is stored.
+        encoding_format (StringField): Format of the dataset encoding.
+        date_modified (DateTimeField): Date and time when the dataset was last modified.
+        path (StringField): Path to the dataset.
+        protocol (StringField): Prefix for the dataset, must be one of the predefined choices.
+    """
+
+    # JSON-LD context and type
+    context = StringField(default="https://schema.org/", required=True)
+    type = StringField(default="Dataset", required=True)
+
+    # Dataset fields
+    uk = StringField(max_length=25, required=True, unique=True)
     checksum = StringField()
-    collections = ListField(ReferenceField(Dataset))
-    creation_date = DateTimeField(default=datetime.datetime.now())
-    # data_id = StringField(max_length=25, required=True, unique=True)
-    file_size = IntField()
+    date_created = DateTimeField(default=datetime.datetime.now())
+    date_modified = DateTimeField()
+    encoding_format = StringField()
     host = StringField()
-    mimetype = StringField()
-    modification_date = DateTimeField()
+    included_in_datacatalog = ListField(ReferenceField(Datacatalog))
     path = StringField(required=True)
-    prefix = StringField(choices=PREFIXES)
+    protocol = StringField(choices=PROTOCOLS)
+    size = IntField()
 
     @classmethod
     def json_dict_fields(cls) -> tuple:
@@ -37,7 +54,7 @@ class DataObject(Document):
         """
         return tuple(field.name for field in cls._fields.values() if isinstance(field, JSONField))
 
-    meta = {"allow_inheritance": True}
+    meta = {"collection": "datasets"}
 
 
 class PosixDataObject(MongoMixin):
@@ -51,22 +68,22 @@ class PosixDataObject(MongoMixin):
         """
         self.hg = Hashing()
         self.logger = logger
-        self._klass = DataObject
+        self._klass = Dataset
 
         collections = kwargs.get("collections", [])
         host = kwargs.get("host", platform.node())
         path = kwargs.get("path")
-        prefix = "posix"
+        protocol = "posix"
 
         self._obj = self._klass(
             pk=kwargs.get("pk"),
-            collections=collections,
+            included_in_datacatalog=collections,
             host=host,
             path=path,
-            prefix=prefix,
+            protocol=protocol,
             checksum=None,
-            file_size=None,
-            mimetype=None,
+            size=None,
+            encoding_format=None,
         )
 
         self.make_unique_key()
@@ -82,7 +99,7 @@ class PosixDataObject(MongoMixin):
         return self._klass
 
     @property
-    def mdb_obj(self) -> DataObject:
+    def mdb_obj(self) -> Dataset:
         """Get the underlying MongoDB object."""
         return self._obj
 
@@ -105,11 +122,11 @@ class PosixDataObject(MongoMixin):
         Retrieve object's detail
         """
         self.mdb_obj.checksum = self.hg.compute_file_hash(path=self.mdb_obj.path)
-        self.mdb_obj.file_size = get_file_size(self.mdb_obj.path)
-        self.mdb_obj.mimetype = guess_mimetype(self.mdb_obj.path)
+        self.mdb_obj.size = get_file_size(self.mdb_obj.path)
+        self.mdb_obj.encoding_format = guess_mimetype(self.mdb_obj.path)
 
         self.logger.debug(
-            f"for {self.desc} computed:\n{self.mdb_obj.file_size}, {self.mdb_obj.mimetype}, {self.mdb_obj.checksum}"
+            f"for {self.desc} computed:\n{self.mdb_obj.size}, {self.mdb_obj.encoding_format}, {self.mdb_obj.checksum}"
         )
         return self
 
@@ -119,4 +136,4 @@ class PosixDataObject(MongoMixin):
 
     def set_modification_date(self) -> None:
         """Set the modification_date of the underlying MongoDB object"""
-        self.mdb_obj.modification_date = datetime.datetime.now()
+        self.mdb_obj.date_modified = datetime.datetime.now()

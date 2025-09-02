@@ -3,7 +3,7 @@ import json
 import click
 import cloup
 
-from omnia.models.data_collection import DataCollection, Dataset
+from omnia.models.data_collection import Datacatalog, DataCollection
 from omnia.models.data_object import PosixDataObject
 from omnia.mongo.connection_manager import get_mec
 from omnia.mongo.mongo_manager import embedded_mongo, get_mongo_uri
@@ -13,7 +13,7 @@ from omnia.utils import Hashing
 def is_collection_or_data_object(item):
     if item:
         # Check if the item is a collection
-        collection_obj = DataCollection(title=item).map()
+        collection_obj = DataCollection(name=item).map()
         collection = collection_obj is not None
 
         data_object = False
@@ -67,9 +67,9 @@ def list_metadata(ctx: click.Context, source, full_path, verify_checksums) -> No
 
                 for field_name in cobj.mdb_obj._fields.keys():
                     field_value = cobj.mdb_obj[field_name]
-                    if field_name not in ("title", "id", "uk", "notes"):
+                    if field_name not in ("name", "id", "uk", "context", "type") + Datacatalog.json_dict_fields():
                         print(f"  - {field_name}: {field_value}")
-                    if field_name in Dataset.json_dict_fields():
+                    if field_name in Datacatalog.json_dict_fields():
                         if field_value:
                             print(f"  - {field_name}:")
                             field_value = json.loads(field_value)
@@ -77,10 +77,10 @@ def list_metadata(ctx: click.Context, source, full_path, verify_checksums) -> No
                                 print(f"      - {subk}: {v}")
                             continue
                         print(f"  - {field_name}: {field_value}")
-                print(f"  - objects: {len(PosixDataObject().query(collections=cobj.mdb_obj))}")
+                print(f"  - objects: {len(PosixDataObject().query(included_in_datacatalog=cobj.mdb_obj))}")
 
                 if full_path or verify_checksums:
-                    dojs = PosixDataObject().query(collections=cobj.mdb_obj)
+                    dojs = PosixDataObject().query(included_in_datacatalog=cobj.mdb_obj)
                     for pdo in dojs:
                         formatted_string = f"    - {pdo['path']}"
                         if verify_checksums:
@@ -95,8 +95,8 @@ def list_metadata(ctx: click.Context, source, full_path, verify_checksums) -> No
                         ck = hg.compute_file_hash(pdo["path"]) == pdo["checksum"]
                         print(f"  - checksum verified: {ck}")
                     for field_name, field_value in pdo.items():
-                        if field_name not in ("_cls", "_id", "uk"):
-                            if field_name == "collections":
+                        if field_name not in ("_cls", "_id", "uk", "context", "type"):
+                            if field_name == "included_in_datacatalog":
                                 collection_names = []
                                 for coll_id in field_value:
                                     coll = DataCollection(pk=coll_id).map()
@@ -106,7 +106,7 @@ def list_metadata(ctx: click.Context, source, full_path, verify_checksums) -> No
                             print(f"  - {field_name}: {field_value}")
                 return
 
-            collections = Dataset.objects()
+            collections = Datacatalog.objects()
             if not collections:
                 print("No collections found in the database.")
                 return
@@ -115,4 +115,4 @@ def list_metadata(ctx: click.Context, source, full_path, verify_checksums) -> No
             print("=" * 40)
 
             for coll in collections:
-                print(f"- {coll.title}")
+                print(f"- {coll.name}")

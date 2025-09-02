@@ -23,7 +23,7 @@ __version__ = importlib.metadata.version(__appname__)
 
 log_dir = Path(user_log_dir(__appname__))
 log_dir.mkdir(parents=True, exist_ok=True)
-log_file = log_dir / "gwasstudio.log"
+log_file = log_dir / f"{__appname__}.log"
 
 config_dir = Path(user_config_dir(__appname__))
 config_dir.mkdir(parents=True, exist_ok=True)

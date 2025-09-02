@@ -2,7 +2,7 @@ import json
 
 from mongoengine import StringField, ValidationError
 
-PREFIXES = ("posix", "s3", "https")
+PROTOCOLS = ("posix", "s3", "https")
 
 
 class JSONField(StringField):
