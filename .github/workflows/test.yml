@@ -3,12 +3,12 @@ name: omnia
 on: [push,pull_request]
 
 jobs:
-  build:
+  test:
 
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.13"]
+        python-version: ["3.12", "3.13"]
 
     steps:
       - name: Checkout repository
