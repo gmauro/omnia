@@ -23,6 +23,7 @@ jobs:
           auto-update-conda: true
           auto-activate-base: false
           python-version: ${{ matrix.python-version }}
+          channels: conda-forge
 
       - name: Install the project
         shell: bash -el {0}
