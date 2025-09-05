@@ -1,50 +1,10 @@
-import glob
-
 import click
 import cloup
 
-from omnia.models.data_collection import Datacatalog, DataCollection
+from omnia.cli.commons import get_data_object, get_datacatalog, match_files
 from omnia.models.data_object import PosixDataObject
 from omnia.mongo.connection_manager import get_mec
 from omnia.mongo.mongo_manager import get_mongo_uri
-
-
-def get_datacatalog(collection_name: str) -> Datacatalog | None:
-    """
-    Retrieves the datacatalog based on the given collection name.
-
-    Parameters:
-    collection_name (str): The name of the collection to retrieve.
-
-    Returns:
-    Datacatalog: The datacatalog object if found, otherwise None.
-    """
-    collection = DataCollection(name=collection_name).map()
-
-    if not collection:
-        return None
-
-    return collection.mdb_obj
-
-
-def match_files(search_path: str) -> list[str]:
-    """
-    Match files using a glob pattern.
-
-    Args:
-        search_path: String to search for files.
-
-    Returns:
-        List of matching file paths
-    """
-    # Use glob to find all files matching the pattern recursively
-    files = glob.glob(search_path, recursive=True)
-
-    # Sort the files to match the behavior of `ls`
-    files.sort()
-
-    return files
-
 
 HELP_DOC_REG = """
 Register datasets to an Omnia collection.
@@ -77,7 +37,7 @@ def dataset_registration(ctx, source, collection_name, skip_metadata_computation
 
         # Print the results
         for file_path in file_paths:
-            pdo = PosixDataObject(path=file_path).map()
+            pdo = get_data_object(file_path)
 
             if not pdo:
                 pdo_data = {

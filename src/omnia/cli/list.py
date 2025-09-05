@@ -3,28 +3,12 @@ import json
 import click
 import cloup
 
+from omnia.cli.commons import is_collection_or_data_object
 from omnia.models.data_collection import Datacatalog, DataCollection
 from omnia.models.data_object import PosixDataObject
 from omnia.mongo.connection_manager import get_mec
 from omnia.mongo.mongo_manager import get_mongo_uri
 from omnia.utils import Hashing
-
-
-def is_collection_or_data_object(item):
-    if item:
-        # Check if the item is a collection
-        collection_obj = DataCollection(name=item).map()
-        collection = collection_obj is not None
-
-        data_object = False
-        data_object_obj = []
-        if not collection:
-            # Check if the item is a data object
-            data_object_obj = PosixDataObject().query(path=item)
-            data_object = len(data_object_obj) > 0
-
-        return collection, data_object, collection_obj, data_object_obj
-    return False, False, None, []
 
 
 @cloup.command("ls", aliases=["list"], no_args_is_help=False, help="List metadata of Data Objects, Collections.")

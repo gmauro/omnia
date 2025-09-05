@@ -3,6 +3,7 @@ import json
 import click
 import cloup
 
+from omnia.cli.commons import get_data_collection
 from omnia.models.data_collection import DataCollection
 from omnia.mongo.connection_manager import get_mec
 from omnia.mongo.mongo_manager import get_mongo_uri
@@ -26,7 +27,7 @@ def edit_collection(
     mongo_uri = get_mongo_uri(ctx)
 
     with get_mec(uri=mongo_uri):
-        collection = DataCollection(name=name).map()
+        collection = get_data_collection(name)
         if not collection:
             print(f"Collection '{name}' not found.")
             return
@@ -84,8 +85,13 @@ def add_collection(ctx: click.Context, name: str, description: str = None, tags:
     }
 
     with get_mec(uri=mongo_uri):
-        collection = DataCollection(uri=mongo_uri, **collection_data)
-        collection.save()
+        collection = get_data_collection(name)
+        if not collection:
+            collection = DataCollection(**collection_data)
+            collection.save()
+        else:
+            print(f"Collection {name} already exists.")
+            return
 
     # Print the name as the main title
     print(f"\n{'=' * 40}")
@@ -112,10 +118,10 @@ def delete_collection(ctx: click.Context, name: str) -> None:
     mongo_uri = get_mongo_uri(ctx)
 
     with get_mec(uri=mongo_uri):
-        collection = DataCollection(uri=mongo_uri, name=name).map()
+        collection = get_data_collection(name)
 
         if not collection:
-            print(f"Collection with name '{name}' not found.")
+            print(f"Collection '{name}' not found.")
             return
 
         collection.delete()
