@@ -6,7 +6,7 @@ import cloup
 from omnia.models.data_collection import Datacatalog, DataCollection
 from omnia.models.data_object import PosixDataObject
 from omnia.mongo.connection_manager import get_mec
-from omnia.mongo.mongo_manager import embedded_mongo, get_mongo_uri
+from omnia.mongo.mongo_manager import get_mongo_uri
 
 
 def get_datacatalog(collection_name: str) -> Datacatalog | None:
@@ -22,7 +22,6 @@ def get_datacatalog(collection_name: str) -> Datacatalog | None:
     collection = DataCollection(name=collection_name).map()
 
     if not collection:
-        print(f"Collection with name '{collection_name}' not found.")
         return None
 
     return collection.mdb_obj
@@ -69,37 +68,38 @@ def dataset_registration(ctx, source, collection_name, skip_metadata_computation
 
     compute_metadata = not skip_metadata_computation
 
-    with embedded_mongo(ctx):
-        mongo_uri = get_mongo_uri(ctx)
-        with get_mec(uri=mongo_uri):
-            datacatalog = get_datacatalog(collection_name)
+    mongo_uri = get_mongo_uri(ctx)
+    with get_mec(uri=mongo_uri):
+        datacatalog = get_datacatalog(collection_name)
+        if not datacatalog:
+            print(f"Datacatalog for collection '{collection_name}' not found.")
+            return
 
-            # Print the results
-            for file_path in file_paths:
-                pdo = PosixDataObject(path=file_path).map()
+        # Print the results
+        for file_path in file_paths:
+            pdo = PosixDataObject(path=file_path).map()
 
-                if not pdo:
-                    pdo_data = {
-                        "path": str(file_path),
-                        "included_in_datacatalog": [datacatalog],
-                    }
-                    pdo = PosixDataObject(uri=mongo_uri, **pdo_data)
+            if not pdo:
+                pdo_data = {
+                    "path": str(file_path),
+                    "included_in_datacatalog": [datacatalog],
+                }
+                pdo = PosixDataObject(uri=mongo_uri, **pdo_data)
 
-                    if compute_metadata:
-                        pdo.compute()
-                    pdo.save()
+                if compute_metadata:
+                    pdo.compute()
+                pdo.save()
 
-                else:
-                    if datacatalog not in pdo.mdb_obj.included_in_datacatalog:
-                        pdo.mdb_obj.included_in_datacatalog.append(datacatalog)
-                        pdo.update()
-                        continue
-
-                    else:
-                        if not force:
-                            print(f"File {file_path} already registered. Use --force to overwrite.")
-                            continue
+            else:
+                dc_present = datacatalog in pdo.mdb_obj.included_in_datacatalog
+                match (dc_present, force):
+                    case (False, _):
+                        # https://docs.mongoengine.org/guide/defining-documents.html#many-to-many-with-listfields
+                        pdo.update(push__included_in_datacatalog=datacatalog)
+                    case (True, True):
                         pdo.compute().update()
+                    case (True, False):
+                        print(f"File {file_path} already registered. Use --force to overwrite.")
 
 
 HELP_DOC_GET = """
@@ -114,22 +114,21 @@ def dataset_retrieval(ctx, collection_name):
     """
     Get a list of dataset paths from an Omnia collection.
     """
-    with embedded_mongo(ctx):
-        mongo_uri = get_mongo_uri(ctx)
+    mongo_uri = get_mongo_uri(ctx)
 
-        with get_mec(uri=mongo_uri):
-            datacatalog = get_datacatalog(collection_name)
+    with get_mec(uri=mongo_uri):
+        datacatalog = get_datacatalog(collection_name)
 
-            pdos = PosixDataObject().query(included_in_datacatalog=datacatalog)
+        pdos = PosixDataObject().query(included_in_datacatalog=datacatalog)
 
-            # Open a file in write mode
-            filename = f"dataset_paths_from_{datacatalog.name}.txt"
-            with open(filename, "w") as file:
-                print(f"Retrieving {len(pdos)} paths from {datacatalog.name}...")
-                # Iterate over the PosixDataObject instances
-                for pdo in pdos:
-                    # Get the path and write it to the file
-                    path = pdo.get("path")
-                    file.write(path + "\n")
+        # Open a file in write mode
+        filename = f"dataset_paths_from_{datacatalog.name}.txt"
+        with open(filename, "w") as file:
+            print(f"Retrieving {len(pdos)} paths from {datacatalog.name}...")
+            # Iterate over the PosixDataObject instances
+            for pdo in pdos:
+                # Get the path and write it to the file
+                path = pdo.get("path")
+                file.write(path + "\n")
 
-            print(f"Paths have been written to {filename}")
+        print(f"Paths have been written to {filename}")

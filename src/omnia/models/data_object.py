@@ -70,14 +70,14 @@ class PosixDataObject(MongoMixin):
         self.logger = logger
         self._klass = Dataset
 
-        collections = kwargs.get("collections", [])
+        included_in_datacatalog = kwargs.get("included_in_datacatalog", [])
         host = kwargs.get("host", platform.node())
         path = kwargs.get("path")
         protocol = "posix"
 
         self._obj = self._klass(
             pk=kwargs.get("pk"),
-            included_in_datacatalog=collections,
+            included_in_datacatalog=included_in_datacatalog,
             host=host,
             path=path,
             protocol=protocol,

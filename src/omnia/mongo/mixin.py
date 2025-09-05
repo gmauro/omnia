@@ -173,7 +173,7 @@ class MongoMixin:
 
         return docs
 
-    def update(self) -> bool:
+    def update(self, **kwargs) -> bool:
         """
         Perform an atomic update of the document in the database and reload the document
         using the updated version.
@@ -188,10 +188,13 @@ class MongoMixin:
 
         self.make_unique_key()
         self.set_modification_date()
-        update_result = self.mdb_obj.save()
+        if kwargs:
+            update_result = self.mdb_obj.update(**kwargs)
+        else:
+            update_result = self.mdb_obj.save()
 
         if update_result:
-            logger.info(f"{self.desc} modified")
+            logger.info(f"{self.desc} updated successfully")
         else:
             logger.info(f"Failed to update document {self.desc}")
 

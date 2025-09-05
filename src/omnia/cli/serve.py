@@ -3,7 +3,7 @@ import cloup
 import uvicorn
 
 from omnia.cli.fast_app import create_app
-from omnia.mongo.mongo_manager import embedded_mongo, get_mongo_uri
+from omnia.mongo.mongo_manager import embedded_mongo, get_mongo_deployment, get_mongo_uri
 
 
 class UvicornServer:
@@ -28,10 +28,8 @@ class UvicornServer:
 def serve(ctx):
     with embedded_mongo(ctx):
         mongo_uri = get_mongo_uri(ctx)
-        print(f"Serving embedded MongoDB at {mongo_uri}...")
+        if get_mongo_deployment(ctx) == "embedded":
+            print(f"Serving embedded MongoDB at {mongo_uri}...")
         app = create_app(mongo_uri, "omnia")
         with UvicornServer(app) as server:
             server.run()
-        # print(f"Serving embedded MongoDB at {mongo_uri}...")
-        # while True:
-        #     pass

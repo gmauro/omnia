@@ -5,7 +5,7 @@ import cloup
 
 from omnia.models.data_collection import DataCollection
 from omnia.mongo.connection_manager import get_mec
-from omnia.mongo.mongo_manager import embedded_mongo, get_mongo_uri
+from omnia.mongo.mongo_manager import get_mongo_uri
 
 HELP_DOC = "Manage collections in the database."
 
@@ -23,44 +23,40 @@ def edit_collection(
     """
     Edit collection's details in the database.
     """
-    with embedded_mongo(ctx):
-        mongo_uri = get_mongo_uri(ctx)
+    mongo_uri = get_mongo_uri(ctx)
 
-        with get_mec(uri=mongo_uri):
-            collection = DataCollection(name=name).map()
-            if not collection:
-                print(f"Collection '{name}' not found.")
-                return
+    with get_mec(uri=mongo_uri):
+        collection = DataCollection(name=name).map()
+        if not collection:
+            print(f"Collection '{name}' not found.")
+            return
 
-            if new_name:
-                collection.mdb_obj.title = new_name
-                collection.update()
-                print(f"Collection '{name}' renamed to '{new_name}'.")
-
-            touched = False
-            if description is not None:
-                collection.mdb_obj.description = description
-                touched = True
-            if len(keywords) > 0:
-                collection.mdb_obj.keywords = keywords
-                touched = True
-            if notes is not None:
-                try:
-                    json.loads(notes)
-                    collection.mdb_obj.notes = notes
-                    touched = True
-                except json.JSONDecodeError:
-                    print(
-                        'Invalid JSON format for notes. It should be like this: \'{"key": "value"}\'. '
-                        "Notes not updated."
-                    )
-
-            if not touched:
-                print(f"Collection '{collection.desc}' unchanged. No changes made.")
-                return
-
+        if new_name:
+            collection.mdb_obj.title = new_name
             collection.update()
-            print(f"Collection '{collection.desc}' updated successfully.")
+            print(f"Collection '{name}' renamed to '{new_name}'.")
+
+        touched = False
+        if description is not None:
+            collection.mdb_obj.description = description
+            touched = True
+        if len(keywords) > 0:
+            collection.mdb_obj.keywords = keywords
+            touched = True
+        if notes is not None:
+            try:
+                json.loads(notes)
+                collection.mdb_obj.notes = notes
+                touched = True
+            except json.JSONDecodeError:
+                print('Invalid JSON format for notes. It should be like this: \'{"key": "value"}\'. Notes not updated.')
+
+        if not touched:
+            print(f"Collection '{collection.desc}' unchanged. No changes made.")
+            return
+
+        collection.update()
+        print(f"Collection '{collection.desc}' updated successfully.")
 
 
 @cloup.command("mkcoll", aliases=["mkdir"], no_args_is_help=True, help="Create a new collection in the database.")
@@ -79,18 +75,17 @@ def add_collection(ctx: click.Context, name: str, description: str = None, tags:
         description: Description for the collection.
         tags: Tags for the collection.
     """
-    with embedded_mongo(ctx):
-        mongo_uri = get_mongo_uri(ctx)
+    mongo_uri = get_mongo_uri(ctx)
 
-        collection_data = {
-            "name": name,
-            "description": description,
-            "tags": tags,
-        }
+    collection_data = {
+        "name": name,
+        "description": description,
+        "tags": tags,
+    }
 
-        with get_mec(uri=mongo_uri):
-            collection = DataCollection(uri=mongo_uri, **collection_data)
-            collection.save()
+    with get_mec(uri=mongo_uri):
+        collection = DataCollection(uri=mongo_uri, **collection_data)
+        collection.save()
 
     # Print the name as the main title
     print(f"\n{'=' * 40}")
@@ -114,16 +109,15 @@ def delete_collection(ctx: click.Context, name: str) -> None:
         ctx: Click context object.
         name: name for the collection.
     """
-    with embedded_mongo(ctx):
-        mongo_uri = get_mongo_uri(ctx)
+    mongo_uri = get_mongo_uri(ctx)
 
-        with get_mec(uri=mongo_uri):
-            collection = DataCollection(uri=mongo_uri, name=name).map()
+    with get_mec(uri=mongo_uri):
+        collection = DataCollection(uri=mongo_uri, name=name).map()
 
-            if not collection:
-                print(f"Collection with name '{name}' not found.")
-                return
+        if not collection:
+            print(f"Collection with name '{name}' not found.")
+            return
 
-            collection.delete()
+        collection.delete()
 
     print(f"Collection '{name}' deleted successfully.")
