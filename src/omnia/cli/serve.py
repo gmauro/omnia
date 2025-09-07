@@ -3,7 +3,7 @@ import cloup
 import uvicorn
 
 from omnia.cli.fast_app import create_app
-from omnia.mongo.mongo_manager import embedded_mongo, get_mongo_deployment, get_mongo_uri
+from omnia.mongo.mongo_manager import embedded_mongo, get_mongo_uri
 
 
 class UvicornServer:
@@ -23,13 +23,32 @@ class UvicornServer:
             self.server = None
 
 
-@cloup.command("serve", no_args_is_help=False, help="Serve the application locally.")
-@click.pass_context
-def serve(ctx):
-    with embedded_mongo(ctx):
-        mongo_uri = get_mongo_uri(ctx)
-        if get_mongo_deployment(ctx) == "embedded":
-            print(f"Serving embedded MongoDB at {mongo_uri}...")
-        app = create_app(mongo_uri, "omnia")
-        with UvicornServer(app) as server:
-            server.run()
+@cloup.command("serve", no_args_is_help=True, help="Serve the application locally.")
+@click.option("--mongo", is_flag=True, help="Start the MongoDB server.")
+@click.option("--api", is_flag=True, help="Start the API server.")
+def serve(mongo, api):
+    match (mongo, api):
+        case (True, True):
+            with embedded_mongo():
+                mongo_uri = get_mongo_uri()
+                print(f"Serving embedded MongoDB at {mongo_uri}...")
+                app = create_app(mongo_uri, "omnia")
+                with UvicornServer(app) as server:
+                    server.run()
+        case (True, False):
+            with embedded_mongo():
+                mongo_uri = get_mongo_uri()
+                print(f"Serving embedded MongoDB at {mongo_uri}...")
+                print("Press CTRL+C to quit")
+                try:
+                    while True:
+                        pass  # Keep the loop running until Ctrl+C is pressed
+                except KeyboardInterrupt:
+                    print("\nShutting down embedded MongoDB...")
+        case (False, True):
+            mongo_uri = get_mongo_uri()
+            app = create_app(mongo_uri, "omnia")
+            with UvicornServer(app) as server:
+                server.run()
+        case (False, False):
+            print("Please specify at least one of --mongo or --api options.")

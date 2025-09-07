@@ -1,6 +1,5 @@
 import json
 
-import click
 import cloup
 
 from omnia.cli.commons import is_collection_or_data_object
@@ -23,18 +22,16 @@ from omnia.utils import Hashing
     required=False,
     help="Verify Data Object integrity. It works only for Collections.",
 )
-@click.pass_context
-def list_metadata(ctx: click.Context, source, full_path, verify_checksums) -> None:
+def list_metadata(source, full_path, verify_checksums) -> None:
     """
     List metadata of Data Objects, Collections
 
     Args:
-        ctx: Click context object.
         source: Collection's title or Data Object's path
         verify_checksums: flag to verify checksums of Data Objects. It works only for Collections.
         full_path: flag to list full path of data objects in the collections.
     """
-    mongo_uri = get_mongo_uri(ctx)
+    mongo_uri = get_mongo_uri()
 
     hg = Hashing()
 

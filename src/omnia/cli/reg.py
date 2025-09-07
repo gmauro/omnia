@@ -1,4 +1,3 @@
-import click
 import cloup
 
 from omnia.cli.commons import get_data_object, get_datacatalog, match_files
@@ -16,8 +15,7 @@ Register datasets to an Omnia collection.
 @cloup.argument("collection-name", help="The collection's name to register files into")
 @cloup.option("-k", "--skip-metadata-computation", is_flag=True, help="Skip metadata computation")
 @cloup.option("-f", "--force", is_flag=True, help="Force registration without prompting")
-@click.pass_context
-def dataset_registration(ctx, source, collection_name, skip_metadata_computation, force):
+def dataset_registration(source, collection_name, skip_metadata_computation, force):
     """Register datasets to an Omnia collection"""
 
     file_paths = match_files(source)
@@ -28,7 +26,7 @@ def dataset_registration(ctx, source, collection_name, skip_metadata_computation
 
     compute_metadata = not skip_metadata_computation
 
-    mongo_uri = get_mongo_uri(ctx)
+    mongo_uri = get_mongo_uri()
     with get_mec(uri=mongo_uri):
         datacatalog = get_datacatalog(collection_name)
         if not datacatalog:
@@ -69,12 +67,11 @@ Get a list of dataset paths from an Omnia collection.
 
 @cloup.command("get", no_args_is_help=True, help=HELP_DOC_GET)
 @cloup.argument("collection-name", help="The collection's name")
-@click.pass_context
-def dataset_retrieval(ctx, collection_name):
+def dataset_retrieval(collection_name):
     """
     Get a list of dataset paths from an Omnia collection.
     """
-    mongo_uri = get_mongo_uri(ctx)
+    mongo_uri = get_mongo_uri()
 
     with get_mec(uri=mongo_uri):
         datacatalog = get_datacatalog(collection_name)

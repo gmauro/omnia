@@ -35,6 +35,12 @@ def get_datacatalog(name: str) -> Datacatalog | None:
 
 def get_data_object(item: str) -> PosixDataObject | None:
     """Get a PosixDataObject by its path."""
+    data_object_obj = PosixDataObject(path=item).map()
+    return data_object_obj if data_object_obj else None
+
+
+def get_data_objects(item: str) -> list[dict] | None:
+    """Get a PosixDataObject by its path."""
     data_object_obj = PosixDataObject().query(path=item)
     return data_object_obj if data_object_obj else None
 
@@ -67,7 +73,7 @@ def is_collection_or_data_object(
     if collection_obj:
         return True, False, collection_obj, []
 
-    data_object_obj = get_data_object(item)
+    data_object_obj = get_data_objects(item)
     return False, bool(data_object_obj), None, data_object_obj
 
 

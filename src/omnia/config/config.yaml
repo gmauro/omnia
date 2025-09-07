@@ -1,3 +1,39 @@
-# MongoDB connection
-mdbc:
-  uri: "mongodb://localhost:27018/omnia"
+# MongoDB connections
+default_profile: "embedded"  # Specify the default profile here
+
+profiles:
+  production:
+    prefix: "mongodb"
+    host: "production.mongodb.example.com"
+    port: 27017
+    username: "prod_user"
+    password: "prod_password"
+    database: "prod_db"
+    options:
+      connectTimeoutMS: 5000
+      socketTimeoutMS: 30000
+      retryWrites: "true"
+
+  mongodb_cloud:
+    prefix: "mongodb+srv"
+    host: "cluster0.xyz.mongodb.net"
+    port: 27017
+    username: "username"
+    password: "password"
+    database: "db_name"
+    options:
+      connectTimeoutMS: 3000
+      socketTimeoutMS: 20000
+      retryWrites: "true"
+      w: majority
+      appName: "Cluster0"
+
+  embedded:
+    prefix: "mongodb"
+    host: "localhost"
+    port: 27018
+    database: "omnia_dev"
+    options:
+      connectTimeoutMS: 2000
+      socketTimeoutMS: 10000
+      retryWrites: "false"

@@ -37,7 +37,7 @@ class MongoEngineConnectionManager:
             from ..main import ConfigurationManager
 
             cm = ConfigurationManager()
-            return cm.get_mdbc_uri
+            return cm.mongodb_uri
         except ImportError:
             return DEFAULT_URI
 

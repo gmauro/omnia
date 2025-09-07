@@ -58,11 +58,39 @@ class ConfigurationManager(metaclass=SingletonConfigurationManager):
             logger.error(f"Configuration validation error: {e}")
             exit(f"Configuration validation error: {e}")
 
-        # Get database connection settings from kwargs, if not present, use config
-        mdb_connection = config.mdbc
+        default_profile_name = config.default_profile
+        profile_name_from_cli = kwargs.get("profile")
+        self.profile = (
+            config.profiles[profile_name_from_cli] if profile_name_from_cli else config.profiles[default_profile_name]
+        )
 
-        self.mdbc_uri = kwargs.get("uri") if kwargs.get("uri") is not None else str(mdb_connection.uri)
+        self.uri_from_cli = kwargs.get("uri")
 
     @property
-    def get_mdbc_uri(self):
-        return self.mdbc_uri
+    def mongodb_uri(self) -> str:
+        """ """
+        # Get database connection settings from kwargs, if not present, use config
+        if self.uri_from_cli:
+            return self.uri_from_cli
+
+        profile = self.profile
+
+        if hasattr(profile, "prefix"):
+            prefix = profile.prefix
+        else:
+            prefix = "mongodb"
+
+        # Construct the MongoDB URI
+        if (hasattr(profile, "username") and profile.username) and (hasattr(profile, "password") and profile.password):
+            uri = f"{prefix}://{profile.username}:{profile.password}@{profile.host}:{profile.port}/{profile.database}"
+        else:
+            uri = f"{prefix}://{profile.host}:{profile.port}/{profile.database}"
+
+        # Add options to the URI
+        if hasattr(profile, "options"):
+            options = profile.options
+            if options:
+                options_str = "&".join([f"{key}={value}" for key, value in vars(options).items() if value])
+                uri += f"?{options_str}"
+
+        return uri

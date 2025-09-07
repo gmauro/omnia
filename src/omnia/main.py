@@ -6,6 +6,7 @@ import cloup
 from omnia import __appname__, __version__, context_settings, log_file, logger
 from omnia.cli import (
     add_collection,
+    dataset_delete,
     dataset_registration,
     dataset_retrieval,
     delete_collection,
@@ -15,7 +16,6 @@ from omnia.cli import (
     serve,
 )
 from omnia.config.config_manager import ConfigurationManager
-from omnia.mongo.mongo_manager import mongo_deployment_types
 
 
 def configure_logging(stdout, verbosity, _logger):
@@ -62,33 +62,24 @@ def configure_logging(stdout, verbosity, _logger):
 @cloup.option_group(
     "MongoDB options",
     cloup.option("--mongo-uri", help="URI connection string to reach the MongoDB server."),
-    cloup.option(
-        "--mongo-deployment",
-        type=click.Choice(mongo_deployment_types),
-        default="embedded",
-        help="Specify the deployment environment for the MongoDB server",
-    ),
+    cloup.option("--mongo-profile", help="Profile to retrieve from the configuration file for the MongoDB connection."),
 )
-@click.pass_context
-def cli(ctx, verbosity, stdout, configuration_file, mongo_uri, mongo_deployment):
+def cli(verbosity, stdout, configuration_file, mongo_uri, mongo_profile):
     configure_logging(stdout, verbosity, logger)
     logger.info(f"{__appname__.capitalize()} started")
 
-    ctx.ensure_object(dict)
-    ctx.obj["mongo"] = {"uri": mongo_uri, "deployment": mongo_deployment}
-
     # Initialize the ConfigurationManager
-    ConfigurationManager(cf=configuration_file, uri=mongo_uri)
+    ConfigurationManager(cf=configuration_file, uri=mongo_uri, profile=mongo_profile)
 
 
 def main():
     cli.section("Collections", add_collection, edit_collection, delete_collection)
-    cli.section("Datasets", dataset_retrieval, dataset_registration)
+    cli.section("Datasets", dataset_retrieval, dataset_registration, dataset_delete)
     cli.section("Metadata", list_metadata)
     cli.add_command(info)
     cli.add_command(serve)
     logger.remove()
-    cli(obj={})
+    cli()
 
 
 if __name__ == "__main__":
