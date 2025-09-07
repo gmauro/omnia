@@ -42,7 +42,7 @@ def dataset_registration(source, collection_name, skip_metadata_computation, for
                     "path": str(file_path),
                     "included_in_datacatalog": [datacatalog],
                 }
-                pdo = PosixDataObject(uri=mongo_uri, **pdo_data)
+                pdo = PosixDataObject(**pdo_data)
 
                 if compute_metadata:
                     pdo.compute()
