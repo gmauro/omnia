@@ -31,15 +31,19 @@ def serve(mongo, api):
         case (True, True):
             with embedded_mongo():
                 mongo_uri = get_mongo_uri()
-                print(f"Serving embedded MongoDB at {mongo_uri}...")
+                embedded = (mongo_uri is None) or ("localhost:27018" in mongo_uri)
+                if embedded:
+                    print(f"Serving embedded MongoDB at {mongo_uri}...")
                 app = create_app(mongo_uri, "omnia")
                 with UvicornServer(app) as server:
                     server.run()
         case (True, False):
             with embedded_mongo():
                 mongo_uri = get_mongo_uri()
-                print(f"Serving embedded MongoDB at {mongo_uri}...")
-                print("Press CTRL+C to quit")
+                embedded = (mongo_uri is None) or ("localhost:27018" in mongo_uri)
+                if embedded:
+                    print(f"Serving embedded MongoDB at {mongo_uri}...")
+                    print("Press CTRL+C to quit")
                 try:
                     while True:
                         pass  # Keep the loop running until Ctrl+C is pressed

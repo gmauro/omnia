@@ -7,7 +7,7 @@ from omnia.config.config_manager import ConfigurationManager
 
 
 def get_mongo_uri() -> str:
-    """Retrieve MongoDB URI from command line options."""
+    """Retrieve MongoDB URI from ConfigurationManager."""
 
     config = ConfigurationManager()
     uri = config.mongodb_uri
@@ -20,15 +20,21 @@ def embedded_mongo():
     """
     Context manager to handle the lifecycle of the embedded MongoDB server.
     """
+    uri = get_mongo_uri()
+    embedded = (uri is None) or ("localhost:27018" in uri)
+    logger.debug(f"Embedded MongoDB: {embedded}")
+
     mdb = MongoDBManager()
-    mdb.start()
+    if embedded:
+        mdb.start()
     try:
         yield
     except Exception as e:
         logger.error(f"Error occurred: {e}")
         raise
     finally:
-        mdb.stop()
+        if embedded:
+            mdb.stop()
 
 
 class MongoDBManager:

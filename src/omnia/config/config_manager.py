@@ -60,16 +60,37 @@ class ConfigurationManager(metaclass=SingletonConfigurationManager):
 
         default_profile_name = config.default_profile
         profile_name_from_cli = kwargs.get("profile")
-        self.profile = (
-            config.profiles[profile_name_from_cli] if profile_name_from_cli else config.profiles[default_profile_name]
-        )
+
+        if profile_name_from_cli:
+            if profile_name_from_cli not in config.profiles:
+                exit(f"The {profile_name_from_cli} profile name is invalid. Check it")
+            self.profile = config.profiles[profile_name_from_cli]
+        else:
+            self.profile = config.profiles[default_profile_name]
 
         self.uri_from_cli = kwargs.get("uri")
 
     @property
     def mongodb_uri(self) -> str:
-        """ """
-        # Get database connection settings from kwargs, if not present, use config
+        """Get the database connection settings from the kwargs. If they are not present, use the config."""
+
+        def _construct_mongodb_uri(prefix, profile):
+            auth_part = (
+                f"{profile.username}:{profile.password}@"
+                if (hasattr(profile, "username") and profile.username)
+                and (hasattr(profile, "password") and profile.password)
+                else ""
+            )
+            port_part = f":{profile.port}" if prefix != "mongodb+srv" else ""
+            uri = f"{prefix}://{auth_part}{profile.host}{port_part}/{profile.database}"
+
+            # Add options to the URI
+            if hasattr(profile, "options") and profile.options:
+                options_str = "&".join(f"{key}={value}" for key, value in vars(profile.options).items() if value)
+                uri += f"?{options_str}"
+
+            return uri
+
         if self.uri_from_cli:
             return self.uri_from_cli
 
@@ -81,16 +102,6 @@ class ConfigurationManager(metaclass=SingletonConfigurationManager):
             prefix = "mongodb"
 
         # Construct the MongoDB URI
-        if (hasattr(profile, "username") and profile.username) and (hasattr(profile, "password") and profile.password):
-            uri = f"{prefix}://{profile.username}:{profile.password}@{profile.host}:{profile.port}/{profile.database}"
-        else:
-            uri = f"{prefix}://{profile.host}:{profile.port}/{profile.database}"
-
-        # Add options to the URI
-        if hasattr(profile, "options"):
-            options = profile.options
-            if options:
-                options_str = "&".join([f"{key}={value}" for key, value in vars(options).items() if value])
-                uri += f"?{options_str}"
+        uri = _construct_mongodb_uri(prefix, profile)
 
         return uri

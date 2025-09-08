@@ -12,7 +12,7 @@ class MongoDBOptions(BaseModel):
 class MongoDBProfile(BaseModel):
     prefix: str = Field(..., description="MongoDB connection prefix")
     host: str = Field(..., description="MongoDB host")
-    port: int = Field(..., description="MongoDB port")
+    port: int | None = Field(None, description="MongoDB port")
     username: str | None = Field(None, description="MongoDB username")
     password: str | None = Field(None, description="MongoDB password")
     database: str = Field(..., description="MongoDB database name")
