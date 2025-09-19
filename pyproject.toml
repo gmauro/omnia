@@ -45,6 +45,11 @@ pytest-cov = "^6.2.1"
 pytest-randomly = "^3.16.0"
 
 
+
+[tool.poetry.group.docs.dependencies]
+mkdocs-material = "^9.6.18"
+mkdocs-git-revision-date-plugin = "^0.3.2"
+
 [tool.ruff]
 line-length = 120
 target-version = "py313"

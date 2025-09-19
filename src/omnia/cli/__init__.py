@@ -1,8 +1,9 @@
+from .get import dataset_retrieval
 from .info import info
 from .list import list_metadata
 from .mkdir import add_collection
 from .mv import edit_collection
-from .reg import dataset_registration, dataset_retrieval
+from .reg import dataset_registration
 from .rm import dataset_delete
 from .rmdir import delete_collection
 from .serve import serve
