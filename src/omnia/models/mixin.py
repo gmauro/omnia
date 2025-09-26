@@ -1,10 +1,13 @@
+import datetime
 import json
+from abc import ABC, abstractmethod
 from typing import Any
 
 from mongoengine.errors import NotUniqueError
 from mongoengine.queryset.visitor import Q
 
 from omnia import logger
+from omnia.utils import Hashing
 
 
 def find_item(obj: dict, key: str) -> Any:
@@ -35,6 +38,9 @@ def find_item(obj: dict, key: str) -> Any:
         return None
 
 
+# -------------------------------------------------
+# Generic MongoEngine CRUD helpers
+# -------------------------------------------------
 class MongoMixin:
     def __init_subclass__(cls, **kwargs):
         required_attrs = ["mdb_obj", "klass", "pk", "unique_key", "desc"]
@@ -199,3 +205,84 @@ class MongoMixin:
             logger.info(f"Failed to update document {self.desc}")
 
         return update_result
+
+
+# -------------------------------------------------
+# Common wrapper functionality for MongoEngine objects
+# -------------------------------------------------
+class MongoWrapperMixin(ABC):
+    """
+    Shared behaviour for wrappers that expose a MongoEngine document
+    (e.g. DataCollection, PosixDataObject).
+
+    Sub‑classes must:
+      * provide ``_build_obj(**kwargs)`` that returns an instance of the
+        underlying Document (or EmbeddedDocument).
+      * implement a ``desc`` property that gives a human‑readable description.
+    """
+
+    def __init__(self, *, klass, **kwargs):
+        # basic utilities
+        self.logger = logger
+        self.hg = Hashing()
+        self._klass = klass
+
+        # Build the underlying document – concrete classes decide what fields to pass
+        self._obj = self._build_obj(**kwargs)
+
+        # Ensure a deterministic unique key is present
+        self.make_unique_key()
+
+    # ------------------------------------------------------------------
+    #  Abstract / hook methods – must be supplied by the concrete wrapper
+    # ------------------------------------------------------------------
+    @abstractmethod
+    def _build_obj(self, **kwargs):
+        """Return a freshly‑instantiated Document of type ``self._klass``."""
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def desc(self) -> str:
+        """Human‑readable description of the wrapped object."""
+        raise NotImplementedError
+
+    # ------------------------------------------------------------------
+    #  Common read‑only helpers
+    # ------------------------------------------------------------------
+    @property
+    def klass(self) -> type:
+        """Class of the underlying MongoEngine document."""
+        return self._klass
+
+    @property
+    def mdb_obj(self):
+        """The actual MongoEngine document instance."""
+        return self._obj
+
+    @property
+    def pk(self) -> dict:
+        """Primary‑key dict used by MongoEngine (``_id``)."""
+        return {"pk": self.mdb_obj.pk}
+
+    @property
+    def unique_key(self) -> dict:
+        """Business‑level unique identifier (``uk`` field)."""
+        return {"uk": self.mdb_obj.uk}
+
+    # ------------------------------------------------------------------
+    #  Default implementations (can be overridden)
+    # ------------------------------------------------------------------
+    def make_unique_key(self) -> None:
+        """
+        Generate a deterministic ``uk`` value.
+        The default strategy uses the object's ``name`` attribute .
+        Concrete wrappers may replace this method with a more specific algorithm.
+        """
+        name = getattr(self.mdb_obj, "name", None)
+        if name:
+            self.mdb_obj.uk = self.hg.compute_string_hash(name)
+
+    def set_modification_date(self) -> None:
+        """Set ``date_modified`` to the current timestamp."""
+        self.mdb_obj.date_modified = datetime.datetime.now()

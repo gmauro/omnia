@@ -10,10 +10,8 @@ from mongoengine import (
     URLField,
 )
 
-from omnia import logger
 from omnia.models.commons import JSONField
-from omnia.mongo.mixin import MongoMixin
-from omnia.utils import Hashing
+from omnia.models.mixin import MongoMixin, MongoWrapperMixin
 
 
 class Provider(EmbeddedDocument):
@@ -78,55 +76,26 @@ class Datacatalog(Document):
         return tuple(field.name for field in cls._fields.values() if isinstance(field, JSONField))
 
 
-class DataCollection(MongoMixin):
-    """Represents a collection of data objects"""
+class DataCollection(MongoMixin, MongoWrapperMixin):
+    """Represents a collection of data objects (a Datacatalog)."""
 
     def __init__(self, **kwargs):
-        self.logger = logger
-        self._klass = kwargs.get("klass", Datacatalog)
+        # Pass the concrete Document class to the mix‑in base‑class
+        super().__init__(klass=Datacatalog, **kwargs)
 
-        self._obj = self._klass(
+    # ------------------------------------------------------------------
+    #  Concrete implementation required by MongoWrapperMixin
+    # ------------------------------------------------------------------
+    def _build_obj(self, **kwargs):
+        """Create the underlying ``Datacatalog`` document."""
+        return self._klass(
             pk=kwargs.get("pk"),
             name=kwargs.get("name"),
             description=kwargs.get("description", None),
             keywords=kwargs.get("keywords", []),
         )
 
-        self.make_unique_key()
-
     @property
     def desc(self) -> str:
-        """Get object descriptor"""
+        """Human‑readable descriptor."""
         return f"{self.mdb_obj.name}"
-
-    @property
-    def klass(self) -> type:
-        """Get the class of the underlying MongoDB object."""
-        return self._klass
-
-    @property
-    def mdb_obj(self) -> Datacatalog:
-        """Get the underlying MongoDB object."""
-        return self._obj
-
-    @property
-    def pk(self) -> dict:
-        """
-        the primary key of the object known by MongoDB (a.k.a. _id)
-        """
-        return {"pk": self.mdb_obj.pk}
-
-    @property
-    def unique_key(self) -> dict:
-        """Get a unique key for the object."""
-        return {"uk": self.mdb_obj.uk}
-
-    def make_unique_key(self) -> None:
-        """Generate a unique key for the object"""
-        if self.mdb_obj.name:
-            hg = Hashing()
-            self.mdb_obj.uk = hg.compute_string_hash(self.mdb_obj.name)
-
-    def set_modification_date(self) -> None:
-        """Set the modification date of the underlying MongoDB object"""
-        self.mdb_obj.date_modified = datetime.datetime.now()

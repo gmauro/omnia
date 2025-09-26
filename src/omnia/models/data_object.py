@@ -3,11 +3,10 @@ import platform
 
 from mongoengine import DateTimeField, Document, IntField, ListField, ReferenceField, StringField
 
-from omnia import logger
 from omnia.models.commons import PROTOCOLS, JSONField
 from omnia.models.data_collection import Datacatalog
-from omnia.mongo.mixin import MongoMixin
-from omnia.utils import Hashing, get_file_size, guess_mimetype
+from omnia.models.mixin import MongoMixin, MongoWrapperMixin
+from omnia.utils import get_file_size, guess_mimetype
 
 
 class Dataset(Document):
@@ -57,25 +56,24 @@ class Dataset(Document):
     meta = {"collection": "datasets"}
 
 
-class PosixDataObject(MongoMixin):
-    """Represents a POSIX data object."""
+class PosixDataObject(MongoMixin, MongoWrapperMixin):
+    """Represents a POSIX data object (a Dataset)."""
 
     def __init__(self, **kwargs):
-        """Initialize a PosixDataObject instance.
+        # ``Dataset`` is the concrete Document class
+        super().__init__(klass=Dataset, **kwargs)
 
-        Args:
-            **kwargs: Keyword arguments for initializing the object.
-        """
-        self.hg = Hashing()
-        self.logger = logger
-        self._klass = Dataset
-
+    # ------------------------------------------------------------------
+    #  Concrete implementation required by MongoWrapperMixin
+    # ------------------------------------------------------------------
+    def _build_obj(self, **kwargs):
+        """Create the underlying ``Dataset`` document."""
         included_in_datacatalog = kwargs.get("included_in_datacatalog", [])
         host = kwargs.get("host", platform.node())
         path = kwargs.get("path")
         protocol = "posix"
 
-        self._obj = self._klass(
+        return self._klass(
             pk=kwargs.get("pk"),
             included_in_datacatalog=included_in_datacatalog,
             host=host,
@@ -86,36 +84,10 @@ class PosixDataObject(MongoMixin):
             encoding_format=None,
         )
 
-        self.make_unique_key()
-
-    # required attributes
     @property
     def desc(self):
+        """Human‑readable descriptor for logging / UI."""
         return f"{self.mdb_obj.uk}-{self.mdb_obj.path}"
-
-    @property
-    def klass(self) -> type:
-        """Get the class of the underlying MongoDB object."""
-        return self._klass
-
-    @property
-    def mdb_obj(self) -> Dataset:
-        """Get the underlying MongoDB object."""
-        return self._obj
-
-    @property
-    def pk(self) -> dict:
-        """
-        the primary key of the object known by MongoDB (a.k.a _id)
-        """
-        return {"pk": self.mdb_obj.pk}
-
-    @property
-    def unique_key(self) -> dict:
-        """Get a unique key for the object."""
-        return {"uk": self.mdb_obj.uk}
-
-    # end of required attributes
 
     def compute(self):
         """
@@ -133,7 +105,3 @@ class PosixDataObject(MongoMixin):
     def make_unique_key(self):
         """Generate a unique key for the object"""
         self.mdb_obj.uk = self.hg.compute_hash(fpath=self.mdb_obj.path)
-
-    def set_modification_date(self) -> None:
-        """Set the modification_date of the underlying MongoDB object"""
-        self.mdb_obj.date_modified = datetime.datetime.now()
