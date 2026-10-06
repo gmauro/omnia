@@ -7,23 +7,23 @@ from omnia.models.data_object import PosixDataObject
 
 def get_data_collection(name: str) -> DataCollection | None:
     """
-    Retrieves the data collection based on the given collection name.
+    Retrieves a data catalogue based on its name.
 
     Parameters:
-    name (str): The name of the collection to retrieve.
+    name (str): The name of the catalogue to retrieve.
 
     Returns:
-    DataCollection: The data collection object if found, otherwise None.
+    DataCollection: The data catalogue object if found, otherwise None.
     """
     return DataCollection(name=name).map()
 
 
 def get_datacatalog(name: str) -> Datacatalog | None:
     """
-    Retrieves the datacatalog based on the given collection name.
+    Retrieves the data catalogue based on its name.
 
     Parameters:
-    name (str): The name of the collection to retrieve.
+    name (str): The name of the catalogue to retrieve.
 
     Returns:
     Datacatalog: The datacatalog object if found, otherwise None.
@@ -53,7 +53,7 @@ def is_collection_or_data_object(
     | tuple[bool, bool, None, PosixDataObject | None]
 ):
     """
-    Checks if the given item is a data collection or a data object.
+    Checks if the given item is a data catalogue or a dataset.
 
     Parameters:
     item (str): The name or path of the item to check.
@@ -61,10 +61,10 @@ def is_collection_or_data_object(
     Returns:
     tuple[bool, bool, DataCollection | None, list[PosixDataObject]]:
         A tuple containing:
-        - bool: True if the item is a data collection, False otherwise.
-        - bool: True if the item is a data object, False otherwise.
-        - DataCollection | None: The collection object if the item is a collection, None otherwise.
-        - list[PosixDataObject]: The list of data objects if the item is a data object, an empty list otherwise.
+        - bool: True if the item is a data catalogue, False otherwise.
+        - bool: True if the item is a dataset, False otherwise.
+        - DataCollection | None: The catalogue object if the item is a catalogue, None otherwise.
+        - list[PosixDataObject]: The list of datasets if the item is a dataset, an empty list otherwise.
     """
     if not item:
         return False, False, None, []

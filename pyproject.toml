@@ -32,6 +32,13 @@ dependencies = [
 ]
 requires-python = ">=3.11,<3.14"
 
+[project.optional-dependencies]
+# FUSE itself is supplied by the operating system (libfuse on Linux or
+# macFUSE on macOS).  Keep the Python binding optional so ordinary catalogue
+# installations do not gain a platform-specific dependency.
+fuse = ["fusepy>=3.0.1,<4.0.0"]
+
+
 [project.scripts]
 omnia = 'omnia.main:main'
 

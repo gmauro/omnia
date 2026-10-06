@@ -68,7 +68,23 @@ class ConfigurationManager(metaclass=SingletonConfigurationManager):
         else:
             self.profile = config.profiles[default_profile_name]
 
+        self.config = config
         self.uri_from_cli = kwargs.get("uri")
+
+    def storage_roots(self, catalog_name: str, storage_profile: str | None = None) -> list[str]:
+        """Resolve trusted roots for a catalogue from administrator configuration."""
+        profile_name = storage_profile or self.config.default_storage_profile
+        if not profile_name:
+            raise ValueError(
+                "No storage profile is configured. Ask an administrator to configure default_storage_profile, "
+                "or use the advanced --storage-root option."
+            )
+        profile = self.config.storage_profiles.get(profile_name)
+        if profile is None:
+            raise ValueError(f"Storage profile '{profile_name}' was not found in the Omnia configuration.")
+        if profile.allowed_catalogs and catalog_name not in profile.allowed_catalogs:
+            raise ValueError(f"Storage profile '{profile_name}' is not configured for catalogue '{catalog_name}'.")
+        return list(profile.storage_roots)
 
     @property
     def mongodb_uri(self) -> str:
@@ -105,3 +121,8 @@ class ConfigurationManager(metaclass=SingletonConfigurationManager):
         uri = _construct_mongodb_uri(prefix, profile)
 
         return uri
+
+
+def get_storage_roots(catalog_name: str, storage_profile: str | None = None) -> list[str]:
+    """Resolve configured roots for commands that expose a catalogue view."""
+    return ConfigurationManager().storage_roots(catalog_name, storage_profile)

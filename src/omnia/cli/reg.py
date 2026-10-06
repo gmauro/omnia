@@ -6,17 +6,17 @@ from omnia.mongo.connection_manager import get_mec
 from omnia.mongo.mongo_manager import get_mongo_uri
 
 HELP_DOC_REG = """
-Register datasets to an Omnia collection.
+Register datasets to an Omnia catalogue.
 """
 
 
 @cloup.command("reg", no_args_is_help=True, help=HELP_DOC_REG)
 @cloup.argument("source", help="Input path")
-@cloup.argument("collection-name", help="The collection's name to register files into")
+@cloup.argument("collection-name", metavar="CATALOGUE", help="The catalogue name to register files into")
 @cloup.option("-k", "--skip-metadata-computation", is_flag=True, help="Skip metadata computation")
 @cloup.option("-f", "--force", is_flag=True, help="Force registration without prompting")
 def dataset_registration(source, collection_name, skip_metadata_computation, force):
-    """Register datasets to an Omnia collection"""
+    """Register datasets to an Omnia catalogue"""
 
     file_paths = match_files(source)
     if not file_paths:
@@ -30,7 +30,7 @@ def dataset_registration(source, collection_name, skip_metadata_computation, for
     with get_mec(uri=mongo_uri):
         datacatalog = get_datacatalog(collection_name)
         if not datacatalog:
-            print(f"Datacatalog for collection '{collection_name}' not found.")
+            print(f"Catalogue '{collection_name}' not found.")
             return
 
         # Print the results

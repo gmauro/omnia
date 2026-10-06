@@ -6,14 +6,20 @@ import cloup
 from omnia import __appname__, __version__, context_settings, log_file, logger
 from omnia.cli import (
     add_collection,
+    browse,
+    catalogue,
     dataset_delete,
     dataset_registration,
     dataset_retrieval,
     delete_collection,
+    describe_path,
     edit_collection,
+    export_tree_links,
     info,
     list_metadata,
+    mount_datasets,
     serve,
+    tree,
 )
 from omnia.config.config_manager import ConfigurationManager
 
@@ -73,9 +79,16 @@ def cli(verbosity, stdout, configuration_file, mongo_uri, mongo_profile):
 
 
 def main():
-    cli.section("Collections", add_collection, edit_collection, delete_collection)
-    cli.section("Datasets", dataset_retrieval, dataset_registration, dataset_delete)
-    cli.section("Metadata", list_metadata)
+    cli.section("Catalogues", catalogue)
+    cli.section("Legacy catalogue commands", add_collection, edit_collection, delete_collection)
+    cli.section("Datasets", dataset_registration, dataset_delete)
+    cli.section("Legacy dataset command", dataset_retrieval)
+    cli.section("Legacy metadata command", list_metadata)
+    cli.add_command(browse)
+    cli.add_command(describe_path)
+    cli.add_command(mount_datasets)
+    cli.add_command(tree)
+    cli.add_command(export_tree_links)
     cli.add_command(info)
     cli.add_command(serve)
     logger.remove()

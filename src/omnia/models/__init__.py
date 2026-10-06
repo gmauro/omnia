@@ -1,3 +1,1 @@
-"""
-Data virtualization module
-"""
+"""Omnia MongoEngine data models."""

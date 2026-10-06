@@ -1,6 +1,13 @@
 # MongoDB connections
 default_profile: "embedded"  # Specify the default profile here
 
+# Trusted local storage is deployment-specific. In a shared installation,
+# configure these in an administrator-managed configuration file and pass it
+# with --configuration_file. Regular users then mount snapshots without
+# supplying physical paths on the command line.
+default_storage_profile:
+storage_profiles: {}
+
 profiles:
   production:
     prefix: "mongodb"

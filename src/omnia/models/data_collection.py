@@ -77,7 +77,7 @@ class Datacatalog(Document):
 
 
 class DataCollection(MongoMixin, MongoWrapperMixin):
-    """Represents a collection of data objects (a Datacatalog)."""
+    """Represents a data catalogue of registered datasets."""
 
     def __init__(self, **kwargs):
         # Pass the concrete Document class to the mix‑in base‑class
