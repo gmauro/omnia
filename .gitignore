@@ -21,9 +21,6 @@ share/python-wheels/
 *.egg
 MANIFEST
 
-# poetry
-poetry.lock
-
 # Cache
 *.pyc
 __pycache__
@@ -39,3 +36,4 @@ pytest.ini
 
 # mkdocs
 site
+version.txt

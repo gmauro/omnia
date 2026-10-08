@@ -5,7 +5,7 @@ channels:
 dependencies:
   - python=3.13.*
   - mamba
-  - poetry=2.*
+  - poetry=2.5.1
   - make
   - mongodb
   - mongo-tools

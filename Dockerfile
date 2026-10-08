@@ -1,28 +1,37 @@
-FROM python:3.10
+FROM python:3.13-slim-bookworm AS builder
 
-ARG YOUR_ENV
+ENV POETRY_VERSION=2.5.1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_NO_CACHE_DIR=1
 
-ENV YOUR_ENV=${YOUR_ENV} \
-  PYTHONFAULTHANDLER=1 \
-  PYTHONUNBUFFERED=1 \
-  PYTHONHASHSEED=random \
-  PIP_NO_CACHE_DIR=off \
-  PIP_DISABLE_PIP_VERSION_CHECK=on \
-  PIP_DEFAULT_TIMEOUT=100 \
-  POETRY_VERSION=1.4.2
+WORKDIR /build
 
-# System deps:
-RUN pip install "poetry==$POETRY_VERSION"
+# Resolve the locked application dependencies in an isolated environment.
+RUN python -m pip install "poetry==${POETRY_VERSION}" \
+    && python -m venv /opt/venv
 
-# Copy only requirements to cache them in docker layer
-WORKDIR /code
-COPY poetry.lock pyproject.toml /code/
+ENV VIRTUAL_ENV=/opt/venv \
+    PATH="/opt/venv/bin:${PATH}" \
+    PYTHONDONTWRITEBYTECODE=1
 
-# Project initialization:
-RUN poetry config virtualenvs.create false \
-  && poetry install $(test "$YOUR_ENV" == production && echo "--no-dev") --no-interaction --no-ansi
+COPY pyproject.toml poetry.lock README.md ./
+COPY src ./src
 
-# Creating folders, and files for a project:
-COPY . /code
+RUN poetry install --only main --no-interaction --no-ansi
 
-RUN make install
+
+FROM python:3.13-slim-bookworm AS primary
+
+ENV VIRTUAL_ENV=/opt/venv \
+    PATH="/opt/venv/bin:${PATH}" \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+# python-magic needs both the libmagic shared library and its magic database.
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y libmagic1 libmagic-mgc \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /opt/venv /opt/venv
+
+ENTRYPOINT ["omnia"]

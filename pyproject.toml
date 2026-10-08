@@ -1,13 +1,19 @@
 [project]
 name = "omnia"
-version = "0.5.0"
+version = "0.6.0"
 description = "Omnia Data Catalogue: Provides a searchable inventory of data assets, enriched with both system and user-defined metadata."
-authors = [{ name = "Gianmauro Cuccuru", email = "gmauro@gmail.com"}]
+authors = [
+    { name = "Gianmauro Cuccuru", email = "gmauro@gmail.com" },
+]
 readme = "README.md"
-include = ["config/config.yaml"]
+include = [
+    "config/config.yaml",
+]
 license = "GPL-3.0-or-later"
 repository = "https://github.com/gmauro/omnia"
-keywords = ["bioinformatics"]
+keywords = [
+    "bioinformatics",
+]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Console",
@@ -33,14 +39,12 @@ dependencies = [
 requires-python = ">=3.11,<3.14"
 
 [project.optional-dependencies]
-# FUSE itself is supplied by the operating system (libfuse on Linux or
-# macFUSE on macOS).  Keep the Python binding optional so ordinary catalogue
-# installations do not gain a platform-specific dependency.
-fuse = ["fusepy>=3.0.1,<4.0.0"]
-
+fuse = [
+    "fusepy>=3.0.1,<4.0.0",
+]
 
 [project.scripts]
-omnia = 'omnia.main:main'
+omnia = "omnia.main:main"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.2.2"
@@ -50,12 +54,13 @@ deptry = "^0.23.1"
 pytest = "^8.4.1"
 pytest-cov = "^6.2.1"
 pytest-randomly = "^3.16.0"
-
-
+git-cliff = "^2.14.2"
 
 [tool.poetry.group.docs.dependencies]
 mkdocs-material = "^9.6.18"
 mkdocs-git-revision-date-plugin = "^0.3.2"
+tomli = "^2.5.0"
+tomli-w = "^1.2.0"
 
 [tool.ruff]
 line-length = 120
@@ -63,18 +68,67 @@ target-version = "py313"
 
 [tool.ruff.lint]
 select = [
-    "B",  # bugbear: security warnings
-    "E",  # pycodestyle
-    "F",  # pyflakes
-    "ISC",  # implicit string concatenation
-    "UP",  # alert you when better syntax is available in your python version
-    "I",  # sort imports alphabetically
+    "B",
+    "E",
+    "F",
+    "ISC",
+    "UP",
+    "I",
 ]
 
 [tool.deptry.per_rule_ignores]
-DEP003 = ["omnia"]
+DEP003 = [
+    "omnia",
+]
+DEP004 = [
+    "tomli",
+    "tomli_w",
+]
 
+[tool.git-cliff.changelog]
+header = "# Changelog\n\nAll notable changes to this project will be documented in this file.\n\n[Git history](https://github.com/ht-diva/gwasstudio/commits/main/)\n"
+body = "{% if version %}## [{{ version | trim_start_matches(pat=\"v\") }}] - {{ timestamp | date(format=\"%Y-%m-%d\") }}\n{% else %}## [unreleased]\n{% endif %}{% for group, commits in commits | filter(attribute=\"merge_commit\", value=false) | unique(attribute=\"message\")| group_by(attribute=\"group\") %}\n    ### {{ group | striptags | trim | upper_first }}\n    {% for commit in commits %}\n        - {% if commit.scope %}*({{ commit.scope }})* {% endif %}{% if commit.breaking %}[**breaking**] {% endif %}{{ commit.message | upper_first }}{% endfor %}\n{% endfor %}\n\n"
+trim = true
+render_always = true
+postprocessors = [
+    { pattern = "\\((\\w+\\s)?#([0-9]+)\\)", replace = "([#${2}](<REPO>/issues/${2}))" },
+    { pattern = ".*", replace_command = "typos --write-changes -" },
+]
+
+[tool.git-cliff.git]
+conventional_commits = true
+filter_unconventional = false
+require_conventional = false
+split_commits = false
+commit_preprocessors = []
+protect_breaking_commits = false
+commit_parsers = [
+    { message = "^feat", group = "<!-- 0 -->🚀 Features" },
+    { message = "^fix", group = "<!-- 1 -->🐛 Bug Fixes" },
+    { message = "^doc", group = "<!-- 3 -->📚 Documentation" },
+    { message = "^perf", group = "<!-- 4 -->⚡ Performance" },
+    { message = "^refactor", group = "<!-- 2 -->🚜 Refactor" },
+    { message = "^style", group = "<!-- 5 -->🎨 Styling" },
+    { message = "^test", group = "<!-- 6 -->🧪 Testing" },
+    { message = "^chore\\(release\\): prepare for", skip = true },
+    { message = "^chore\\(deps.*\\)", skip = true },
+    { message = "^chore\\(pr\\)", skip = true },
+    { message = "^chore\\(pull\\)", skip = true },
+    { message = "^chore|^ci", group = "<!-- 7 -->⚙️ Miscellaneous Tasks" },
+    { body = ".*security", group = "<!-- 8 -->🛡️ Security" },
+    { message = "^revert", group = "<!-- 9 -->◀️ Revert" },
+    { message = ".*", group = "<!-- 10 -->💼 Other" },
+]
+filter_commits = false
+link_parsers = []
+use_branch_tags = false
+topo_order = false
+topo_order_commits = true
+sort_commits = "oldest"
+recurse_submodules = false
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
+requires = [
+    "poetry-core>=2.0.0,<3.0.0",
+]
 build-backend = "poetry.core.masonry.api"
