@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 
 [Git history](https://github.com/ht-diva/gwasstudio/commits/main/)
+## [0.6.1] - 2026-10-08
+
+### ⚙️ Miscellaneous Tasks
+
+- Update docker build environment
+
 ## [0.6.0] - 2026-10-08
 
 ### 🚀 Features
