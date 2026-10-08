@@ -10,26 +10,26 @@ from omnia.mongo.mongo_manager import get_mongo_uri
 from omnia.utils import Hashing
 
 
-@cloup.command("ls", aliases=["list"], no_args_is_help=False, help="List metadata of Data Objects, Collections.")
-@cloup.argument("source", default=None, required=False, help="Collection's title or Data Object's path")
+@cloup.command("ls", aliases=["list"], no_args_is_help=False, help="Legacy: list metadata of datasets and catalogues.")
+@cloup.argument("source", default=None, required=False, help="Catalogue title or dataset path")
 @cloup.option(
-    "-l", "--full-path", is_flag=True, required=False, help="List Data Object full path. It works only for Collections."
+    "-l", "--full-path", is_flag=True, required=False, help="List dataset full paths. Works only for catalogues."
 )
 @cloup.option(
     "-k",
     "--verify-checksums",
     is_flag=True,
     required=False,
-    help="Verify Data Object integrity. It works only for Collections.",
+    help="Verify dataset integrity. Works only for catalogues.",
 )
 def list_metadata(source, full_path, verify_checksums) -> None:
     """
-    List metadata of Data Objects, Collections
+    List metadata of datasets and catalogues.
 
     Args:
-        source: Collection's title or Data Object's path
-        verify_checksums: flag to verify checksums of Data Objects. It works only for Collections.
-        full_path: flag to list full path of data objects in the collections.
+        source: Catalogue title or dataset path.
+        verify_checksums: Verify dataset checksums; works only for catalogues.
+        full_path: List dataset paths in the catalogue.
     """
     mongo_uri = get_mongo_uri()
 
@@ -39,11 +39,11 @@ def list_metadata(source, full_path, verify_checksums) -> None:
         collection, data_object_path, cobj, dojs = is_collection_or_data_object(source)
 
         if not collection and not data_object_path and source:
-            print(f"I couldn't find either a collection or a dataset with the name '{source}'")
+            print(f"I couldn't find either a catalogue or a dataset with the name '{source}'")
             return
 
         if collection:
-            print(f"{cobj.desc} collection")
+            print(f"{cobj.desc} catalogue")
             print("-" * len(cobj.desc))
 
             for field_name in cobj.mdb_obj._fields.keys():
@@ -89,10 +89,10 @@ def list_metadata(source, full_path, verify_checksums) -> None:
 
         collections = Datacatalog.objects()
         if not collections:
-            print("No collections found in the database.")
+            print("No catalogues found in the database.")
             return
 
-        print(f"\nCollections in the database: {len(collections)}")
+        print(f"\nCatalogues in the database: {len(collections)}")
         print("=" * 40)
 
         for coll in collections:

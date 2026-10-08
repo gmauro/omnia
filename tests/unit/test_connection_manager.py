@@ -20,10 +20,13 @@ class TestMongoEngineConnectionManager(unittest.TestCase):
         mock_connect.reset_mock()
         mock_disconnect.reset_mock()
 
-        # Test with default URI
-        with MongoEngineConnectionManager() as manager:
-            self.assertEqual(manager.uri, "mongodb://localhost:27018/omnia")
-            mock_connect.assert_called_once_with(host="mongodb://localhost:27018/omnia")
+        # Test with the URI supplied by configuration. Keep this mocked: the
+        # real configuration may be user- or deployment-specific.
+        configured_uri = "mongodb://localhost:27018/omnia_dev?connectTimeoutMS=2000"
+        with patch.object(MongoEngineConnectionManager, "_get_uri_from_config", return_value=configured_uri):
+            with MongoEngineConnectionManager() as manager:
+                self.assertEqual(manager.uri, configured_uri)
+                mock_connect.assert_called_once_with(host=configured_uri)
 
         mock_disconnect.assert_called_once()
 
@@ -46,10 +49,12 @@ class TestMongoEngineConnectionManager(unittest.TestCase):
         self.assertIsInstance(manager, MongoEngineConnectionManager)
         self.assertEqual(manager.uri, test_uri)
 
-        # Test with default URI
-        manager = get_mec()
-        self.assertIsInstance(manager, MongoEngineConnectionManager)
-        self.assertEqual(manager.uri, "mongodb://localhost:27018/omnia")
+        # Test with the URI supplied by configuration.
+        configured_uri = "mongodb://localhost:27018/omnia_dev?connectTimeoutMS=2000"
+        with patch.object(MongoEngineConnectionManager, "_get_uri_from_config", return_value=configured_uri):
+            manager = get_mec()
+            self.assertIsInstance(manager, MongoEngineConnectionManager)
+            self.assertEqual(manager.uri, configured_uri)
 
     @patch("omnia.mongo.connection_manager.MongoEngineConnectionManager._get_uri_from_config")
     def test_get_mec_from_config(self, mock_get_uri):
