@@ -17,7 +17,9 @@ ENV VIRTUAL_ENV=/opt/venv \
 COPY pyproject.toml poetry.lock README.md ./
 COPY src ./src
 
-RUN poetry install --only main --no-interaction --no-ansi
+RUN poetry install --only main --no-root --no-interaction --no-ansi \
+    && poetry build --format wheel \
+    && pip install --no-deps dist/*.whl
 
 
 FROM python:3.13-slim-bookworm AS primary
@@ -25,7 +27,8 @@ FROM python:3.13-slim-bookworm AS primary
 ENV VIRTUAL_ENV=/opt/venv \
     PATH="/opt/venv/bin:${PATH}" \
     PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    HOME=/home/omnia
 
 # python-magic needs both the libmagic shared library and its magic database.
 RUN apt-get update \
@@ -34,4 +37,7 @@ RUN apt-get update \
 
 COPY --from=builder /opt/venv /opt/venv
 
-ENTRYPOINT ["omnia"]
+RUN groupadd --system omnia \
+    && useradd --system --gid omnia --create-home --home-dir /home/omnia --shell /usr/sbin/nologin omnia
+
+USER omnia
