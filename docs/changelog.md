@@ -3,7 +3,17 @@
 All notable changes to this project will be documented in this file.
 
 [Git history](https://github.com/ht-diva/gwasstudio/commits/main/)
+## [0.6.2] - 2026-10-09
+
+### 🐛 Bug Fixes
+
+- Update the Dockerfile to fix the image build and add a dedicated user
+
 ## [0.6.1] - 2026-10-08
+
+### 💼 Other
+
+- Bump version
 
 ### ⚙️ Miscellaneous Tasks
 
