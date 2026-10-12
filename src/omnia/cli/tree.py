@@ -11,6 +11,7 @@ import click
 import cloup
 from mongoengine.errors import DoesNotExist, ValidationError
 
+from omnia.cli.browse import OUTPUT_FORMAT, _emit, _entry_row, _human_size
 from omnia.cli.commons import get_datacatalog
 from omnia.config.config_manager import get_storage_roots
 from omnia.models.data_object import Dataset, PosixDataObject
@@ -617,6 +618,78 @@ def list_tree_snapshots(collection_name: str) -> None:
                 f"{snapshot.name}\t{snapshot.state}\t{created}\t{published}\t{retired}\t"
                 f"{snapshot.retirement_reason or '-'}\t{snapshot.manifest_sha256 or '-'}"
             )
+
+
+@tree.command("ls", help="Inspect entries in a draft snapshot before publication.")
+@cloup.argument("collection_name", metavar="CATALOGUE")
+@cloup.argument("snapshot_name", metavar="SNAPSHOT")
+@cloup.argument("path", required=False, default="")
+@cloup.option("-R", "--recursive", is_flag=True, help="List all descendants, not only immediate children.")
+@cloup.option("-l", "--long", "long_format", is_flag=True, help="Include complete curator metadata.")
+@cloup.option("-h", "--human-readable", is_flag=True, help="Render sizes as KiB, MiB, and so on in table/TSV output.")
+@cloup.option(
+    "--sort", "sort_by", type=click.Choice(("name", "path", "kind", "size")), default="name", show_default=True
+)
+@cloup.option("--reverse", is_flag=True, help="Reverse the selected sort order.")
+@cloup.option("--format", "output_format", type=OUTPUT_FORMAT, default="table", show_default=True)
+def list_draft_tree(
+    collection_name: str,
+    snapshot_name: str,
+    path: str,
+    recursive: bool,
+    long_format: bool,
+    human_readable: bool,
+    sort_by: str,
+    reverse: bool,
+    output_format: str,
+) -> None:
+    """List draft snapshot entries for curator review before publication."""
+    requested = PurePosixPath(path) if path else PurePosixPath(".")
+    requested_path = "" if requested == PurePosixPath(".") else requested.as_posix()
+    if requested.is_absolute() or ".." in requested.parts:
+        raise click.UsageError("PATH must be a safe relative logical path.")
+
+    with get_mec(uri=get_mongo_uri()):
+        catalog = get_datacatalog(collection_name)
+        if not catalog:
+            raise click.ClickException(f"Catalogue '{collection_name}' was not found.")
+        snapshot = TreeSnapshot.objects(collection=catalog, name=snapshot_name).first()
+        if not snapshot:
+            raise click.ClickException(f"Snapshot '{snapshot_name}' was not found for catalogue '{collection_name}'.")
+        if snapshot.state != "draft":
+            raise click.ClickException(
+                f"Snapshot '{snapshot_name}' is {snapshot.state}; use 'omnia browse ls' for published snapshots."
+            )
+        if requested_path:
+            parent = TreeEntry.objects(snapshot=snapshot, relative_path=requested_path).first()
+            if not parent:
+                raise click.ClickException(f"Logical path '{requested_path}' was not found.")
+            if parent.kind != "directory":
+                raise click.ClickException(f"Logical path '{requested_path}' is a {parent.kind}, not a directory.")
+        entries = list(TreeEntry.objects(snapshot=snapshot))
+        if recursive:
+            prefix = f"{requested_path}/" if requested_path else ""
+            entries = [entry for entry in entries if not requested_path or entry.relative_path.startswith(prefix)]
+        else:
+            entries = [entry for entry in entries if entry.parent_path == requested_path]
+        rows = [_entry_row(entry, include_detail=long_format) for entry in entries]
+        if long_format:
+            for row, entry in zip(rows, entries, strict=True):
+                row["metadata"] = entry.metadata or {}
+
+    sort_key = {
+        "name": lambda row: row["name"].casefold(),
+        "path": lambda row: row["path"],
+        "kind": lambda row: (row["kind"], row["path"]),
+        "size": lambda row: (row["size"] is None, row["size"] or 0, row["path"]),
+    }[sort_by]
+    rows.sort(key=sort_key, reverse=reverse)
+    columns = ["name", "kind", "modality", "role", "size", "path"]
+    if long_format:
+        columns.extend(("target_path", "status", "metadata"))
+    if human_readable and output_format != "json":
+        rows = [{**row, "size": _human_size(row["size"])} for row in rows]
+    _emit(rows, columns, output_format)
 
 
 @tree.command("publish")

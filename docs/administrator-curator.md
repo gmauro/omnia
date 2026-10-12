@@ -83,6 +83,30 @@ List all lifecycle records, including drafts and retired snapshots:
 omnia tree list example-project
 ```
 
+## Inspect a draft snapshot
+
+Before publishing, list the draft's logical entries from its root or inspect a
+subdirectory:
+
+```bash
+omnia tree ls example-project example-project_20261001
+omnia tree ls example-project example-project_20261001 phenotypes
+```
+
+Use recursive and long output to review descendants and the full curator
+metadata attached to entries. JSON output is useful for scripted checks:
+
+```bash
+omnia tree ls example-project example-project_20261001 \
+  --recursive --long --sort path
+omnia tree ls example-project example-project_20261001 \
+  --recursive --long --format json
+```
+
+`tree ls` is read-only and accepts draft snapshots only. Use it with
+`tree validate` to inspect the hierarchy and check structural integrity before
+publishing. Published snapshots are browsed with `omnia browse ls`.
+
 Discard only a draft that is no longer wanted:
 
 ```bash
