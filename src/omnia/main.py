@@ -64,7 +64,7 @@ def configure_logging(stdout, verbosity, _logger):
 @click.version_option(version=__version__)
 @cloup.option("--verbosity", type=click.Choice(["quiet", "normal", "loud"]), default="normal", help="Set log verbosity")
 @cloup.option("--stdout", is_flag=True, default=False, help="Print logs to the stdout")
-@cloup.option("--configuration_file", help="Configuration file.")
+@cloup.option("-c", "--configuration-file", "--configuration_file", "configuration_file", help="Configuration file.")
 @cloup.option_group(
     "MongoDB options",
     cloup.option("--mongo-uri", help="URI connection string to reach the MongoDB server."),

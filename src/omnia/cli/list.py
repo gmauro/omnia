@@ -13,7 +13,11 @@ from omnia.utils import Hashing
 @cloup.command("ls", aliases=["list"], no_args_is_help=False, help="Legacy: list metadata of datasets and catalogues.")
 @cloup.argument("source", default=None, required=False, help="Catalogue title or dataset path")
 @cloup.option(
-    "-l", "--full-path", is_flag=True, required=False, help="List dataset full paths. Works only for catalogues."
+    "-l",
+    "--full-path",
+    is_flag=True,
+    required=False,
+    help="Show catalogue descriptions when listing all; list dataset paths for one catalogue.",
 )
 @cloup.option(
     "-k",
@@ -95,5 +99,9 @@ def list_metadata(source, full_path, verify_checksums) -> None:
         print(f"\nCatalogues in the database: {len(collections)}")
         print("=" * 40)
 
-        for coll in collections:
-            print(f"- {coll.name}")
+        if full_path:
+            for coll in collections:
+                print(f"- {coll.name}: {coll.description or 'No description'}")
+        else:
+            for coll in collections:
+                print(f"- {coll.name}")

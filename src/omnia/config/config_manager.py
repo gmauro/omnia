@@ -47,9 +47,10 @@ class ConfigurationManager(metaclass=SingletonConfigurationManager):
                 copy_config_file_from_package(configuration_file)
                 logger.warning(f"Configuration file has default values! Update them in {configuration_file}")
 
+        self.config_file = configuration_file.expanduser().resolve()
         logger.debug(f"Reading configuration from {configuration_file}")
         yaml = YAML(typ="safe")
-        with open(configuration_file) as file:
+        with self.config_file.open() as file:
             c = yaml.load(file)
 
         try:
