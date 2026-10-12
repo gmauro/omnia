@@ -243,10 +243,10 @@ storage_profiles:
 Users then select a published snapshot without knowing the physical roots:
 
 ```bash
-omnia --configuration_file /etc/omnia/config.yaml \
+omnia --configuration-file /etc/omnia/config.yaml \
   mount example-project example-project_20261001 /mnt/example-project
 
-omnia --configuration_file /etc/omnia/config.yaml \
+omnia --configuration-file /etc/omnia/config.yaml \
   export-links example-project example-project_20261001 /project/views/example-project_20261001
 ```
 
@@ -292,8 +292,24 @@ omnia tree validate example-project example-project_20261001
 ```
 
 Validation reports missing parents, missing alias targets, and deleted Dataset
-references. Published snapshots cannot be repaired in place; publish a
-corrected successor snapshot instead.
+references. It does not inspect the physical files or compare their current
+contents with stored checksums. Use catalogue verification for that check:
+
+```bash
+omnia catalogue verify example-project
+```
+
+When multiple snapshots ingest the exact same physical path, Omnia reuses its
+Dataset record, including its checksum, size, and format metadata. Re-ingesting
+an unchanged file is therefore efficient. If a file is modified in place,
+`tree validate` will not detect it, and the new snapshot can inherit stale
+Dataset metadata. `catalogue verify` compares the current file with the stored
+checksum and reports a mismatch, but it is catalogue-wide rather than
+snapshot-specific. Keep changed file versions at distinct paths if you need
+their content and checksum provenance to remain distinguishable.
+
+Published snapshots cannot be repaired in place; publish a corrected
+successor snapshot instead.
 
 ## Hand off a release to users
 
