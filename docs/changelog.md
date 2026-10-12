@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 
 [Git history](https://github.com/ht-diva/gwasstudio/commits/main/)
+## [0.7.0] - 2026-10-12
+
+### 🚀 Features
+
+- Add `omnia tree ls CATALOGUE SNAPSHOT [PATH]` for read-only inspection of draft snapshots
+
 ## [0.6.3] - 2026-10-12
 
 ### 💼 Other
