@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 
 [Git history](https://github.com/ht-diva/gwasstudio/commits/main/)
+## [0.6.3] - 2026-10-12
+
+### 💼 Other
+
+- Bump version
+- Add a curator-guide note clarifying that `tree validate` checks tree structure and references, while `omnia catalogue verify` compares current files with stored checksums. It also explains that snapshots sharing a physical path share its Dataset metadata, so in-place file changes can leave stale metadata
+
+### 🎨 Styling
+
+- The config option now supports `-c` plus both long spellings
+
+### ⚙️ Miscellaneous Tasks
+
+- Do docker build if push on docker branch
+
 ## [0.6.2] - 2026-10-09
 
 ### 🐛 Bug Fixes
