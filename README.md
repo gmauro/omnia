@@ -15,6 +15,16 @@ Choose the guide that matches your role:
   inspect logical paths, use JSON/TSV output, mount/export data, and describe
   the current view.
 
+## Usage on the HT-HPC
+
+To use _omnia_ on the HT computing cluster, simply type:
+
+`source /exchange/healthds/singularity_functions`
+
+Verify with:
+
+`omnia --version`
+
 ## Quick start
 
 Curators publish a versioned tree:
