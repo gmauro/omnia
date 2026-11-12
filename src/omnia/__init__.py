@@ -40,7 +40,7 @@ mongo_db_logpath = log_dir / "mongod.log"
 formatter_settings = HelpFormatter.settings(
     theme=HelpTheme(
         invoked_command=Style(fg="red"),
-        heading=Style(fg="bright_white", bold=True),
+        heading=Style(fg=(200, 90, 0), bold=True),
         constraint=Style(fg="magenta"),
         col1=Style(fg="yellow"),
     )
