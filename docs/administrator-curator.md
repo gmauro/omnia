@@ -86,7 +86,7 @@ deprecated because their data are no longer approved for use.
 The diagram below summarizes how to publish new snapshots and retire
 previous versions.
 
-![Omnia data curation workflow](curator_flowchart.png){ width=75% }
+![Omnia data curation workflow](curator_flowchart.png)
 
 ### Create and publish a snapshot
 
